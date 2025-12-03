@@ -1,182 +1,178 @@
 """
-Data loading script for AcademiaMatch
-Loads researcher data from Excel files into the database
+Load researcher data from Excel files into the database.
+This script loads data from 3 Excel files:
+1. External researchers
+2. Internal researchers (survey responses)
+3. Additional internal researchers
 """
+
 import pandas as pd
 from app import app, db, Researcher
-import os
 
-def clean_text(text):
-    """Clean and normalize text data"""
-    if pd.isna(text) or text is None:
-        return ""
-    return str(text).strip()
-
-def load_external_researchers(file_path):
-    """Load external researchers from Excel file"""
-    if not os.path.exists(file_path):
-        print(f"⚠ External researchers file not found: {file_path}")
-        return 0
-    
-    print(f"Loading external researchers from: {file_path}")
-    df = pd.read_excel(file_path)
-    
-    count = 0
-    for _, row in df.iterrows():
-        email = clean_text(row.get('Email Address', ''))
-        if not email:
-            continue
-        
-        # Check if researcher already exists
-        existing = Researcher.query.filter_by(email=email).first()
-        if existing:
-            print(f"  ⏭ Skipping duplicate: {email}")
-            continue
-        
-        # Column names from Excel (using dict.get with exact column names)
-        org_focus_col = "What is your organization's primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)"
-        challenge_col = "Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate"
-        expertise_col = "What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)"
-        lab_tours_col = "Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to "
-        
-        researcher = Researcher(
-            name=clean_text(row.get('Your Name', '')),
-            email=email,
-            organization=clean_text(row.get('Your Orgnization', '')),
-            researcher_type='external',
-            organization_focus=clean_text(row.get(org_focus_col, '')),
-            challenge_description=clean_text(row.get(challenge_col, '')),
-            expertise_sought=clean_text(row.get(expertise_col, '')),
-            lab_tours_interested=clean_text(row.get(lab_tours_col, ''))
-        )
-        
-        db.session.add(researcher)
-        count += 1
-    
-    db.session.commit()
-    print(f"✓ Loaded {count} external researchers")
-    return count
-
-def load_internal_researchers_file1(file_path):
-    """Load internal researchers from first Excel file (survey responses)"""
-    if not os.path.exists(file_path):
-        print(f"⚠ Internal researchers file 1 not found: {file_path}")
-        return 0
-    
-    print(f"Loading internal researchers from: {file_path}")
-    df = pd.read_excel(file_path)
-    
-    count = 0
-    for _, row in df.iterrows():
-        email = clean_text(row.get('Email Address', ''))
-        if not email:
-            continue
-        
-        # Check if researcher already exists
-        existing = Researcher.query.filter_by(email=email).first()
-        if existing:
-            print(f"  ⏭ Skipping duplicate: {email}")
-            continue
-        
-        # Column names from Excel
-        primary_areas_col = "What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics)."
-        experience_col = "Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)"
-        sectors_col = "What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)"
-        
-        researcher = Researcher(
-            name=clean_text(row.get('Your Name', '')),
-            email=email,
-            organization='Humber Polytechnic',
-            researcher_type='internal',
-            faculty_department=clean_text(row.get('Your Faculty/Department', '')),
-            primary_areas=clean_text(row.get(primary_areas_col, '')),
-            experience_summary=clean_text(row.get(experience_col, '')),
-            sectors_interested=clean_text(row.get(sectors_col, ''))
-        )
-        
-        db.session.add(researcher)
-        count += 1
-    
-    db.session.commit()
-    print(f"✓ Loaded {count} internal researchers from file 1")
-    return count
-
-def load_internal_researchers_file2(file_path):
-    """Load additional internal researchers from second Excel file"""
-    if not os.path.exists(file_path):
-        print(f"⚠ Internal researchers file 2 not found: {file_path}")
-        return 0
-    
-    print(f"Loading additional internal researchers from: {file_path}")
-    df = pd.read_excel(file_path)
-    
-    count = 0
-    for _, row in df.iterrows():
-        email = clean_text(row.get('Humber Email', ''))
-        if not email:
-            continue
-        
-        # Check if researcher already exists
-        existing = Researcher.query.filter_by(email=email).first()
-        if existing:
-            print(f"  ⏭ Skipping duplicate: {email}")
-            continue
-        
-        # Combine job title and status for experience summary
-        job_title = clean_text(row.get('Job Title', ''))
-        job_status = clean_text(row.get('Job Status', ''))
-        experience = f"{job_title} ({job_status})" if job_title and job_status else job_title
-        
-        researcher = Researcher(
-            name=clean_text(row.get('Researcher Full Name', '')),
-            email=email,
-            organization='Humber Polytechnic',
-            researcher_type='internal',
-            faculty_department=clean_text(row.get('Faculty / Department', '')),
-            primary_areas=clean_text(row.get('Research Interest Keywords', '')),
-            experience_summary=experience,
-            sectors_interested=''  # Not available in this file
-        )
-        
-        db.session.add(researcher)
-        count += 1
-    
-    db.session.commit()
-    print(f"✓ Loaded {count} internal researchers from file 2")
-    return count
+def clean_text(value):
+    """Clean and normalize text values from Excel"""
+    if pd.isna(value) or value is None:
+        return ''
+    return str(value).strip()
 
 def load_all_data():
-    """Load all researcher data from Excel files"""
+    """Load all Excel files into the database"""
+    
     print("\n" + "="*60)
     print("Loading Researcher Data into Database")
     print("="*60 + "\n")
     
-    # Load external researchers
-    external_count = load_external_researchers(
-        'ResearchUnplugged_PartneringSessions!_ExternalResearcher.xlsx'
-    )
+    total_loaded = 0
     
-    # Load internal researchers from both files
-    internal_count1 = load_internal_researchers_file1(
-        'ResearchUnplugged_PartneringSessions!1_InternalHumber.xlsx'
-    )
-    
-    internal_count2 = load_internal_researchers_file2(
-        'AdditonalInternalHumberResearcher.xlsx'
-    )
-    
-    total_internal = internal_count1 + internal_count2
-    total = external_count + total_internal
-    
-    print("\n" + "="*60)
-    print("Data Loading Summary:")
-    print(f"  External Researchers: {external_count}")
-    print(f"  Internal Researchers: {total_internal} ({internal_count1} + {internal_count2})")
-    print(f"  Total Loaded: {total}")
-    print("="*60 + "\n")
-    
-    return total
+    with app.app_context():
+        # File 1: External Researchers
+        try:
+            file1 = 'ResearchUnplugged_PartneringSessions!_ExternalResearcher.xlsx'
+            print(f"Loading external researchers from: {file1}")
+            
+            df = pd.read_excel(file1)
+            loaded = 0
+            
+            for _, row in df.iterrows():
+                email = clean_text(row.get('Email Address', ''))
+                name = clean_text(row.get('Your Name', ''))
+                
+                if not email or not name:
+                    continue
+                
+                # Check if already exists
+                if Researcher.query.filter_by(email=email).first():
+                    print(f"  ⏭ Skipping duplicate: {email}")
+                    continue
+                
+                researcher = Researcher(
+                    name=name,
+                    email=email,
+                    organization=clean_text(row.get('Your Orgnization', '')),
+                    researcher_type='external',
+                    organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
+                    challenge_description=clean_text(row.get('Describe a specific challenge or project where you\'re seeking collaboration or expertise from Humber Polytechnic faculty.', '')),
+                    expertise_sought=clean_text(row.get('What specific expertise or resources are you looking for from Humber Polytechnic? (e.g., data analysis, prototyping, regulatory guidance)', '')),
+                    lab_tours_interested=clean_text(row.get('Are you interested in touring any of Humber\'s specialized labs or facilities? If yes, please specify which areas interest you (e.g., AI, manufacturing, health sciences).', ''))
+                )
+                
+                db.session.add(researcher)
+                loaded += 1
+            
+            db.session.commit()
+            print(f"✓ Loaded {loaded} external researchers\n")
+            total_loaded += loaded
+            
+        except FileNotFoundError:
+            print(f"✗ File not found: {file1}\n")
+        except Exception as e:
+            print(f"✗ Error loading external researchers: {str(e)}\n")
+            db.session.rollback()
+        
+        # File 2: Internal Researchers (Survey)
+        try:
+            file2 = 'ResearchUnplugged_PartneringSessions!1_InternalHumber.xlsx'
+            print(f"Loading internal researchers from: {file2}")
+            
+            df = pd.read_excel(file2)
+            loaded = 0
+            
+            for _, row in df.iterrows():
+                email = clean_text(row.get('Email Address', ''))
+                name = clean_text(row.get('Your Name', ''))
+                
+                if not email or not name:
+                    continue
+                
+                # Check if already exists
+                if Researcher.query.filter_by(email=email).first():
+                    print(f"  ⏭ Skipping duplicate: {email}")
+                    continue
+                
+                researcher = Researcher(
+                    name=name,
+                    email=email,
+                    organization='Humber Polytechnic',
+                    researcher_type='internal',
+                    faculty_department=clean_text(row.get('Faculty/Department', '')),
+                    primary_areas=clean_text(row.get('What are your primary research areas or areas of expertise? Please list key words or phrases (e.g., artificial intelligence, sustainable design, healthcare innovation).', '')),
+                    experience_summary=clean_text(row.get('Briefly describe your research experience or expertise (e.g., publications, projects, industry collaborations).', '')),
+                    sectors_interested=clean_text(row.get('Are there specific industry sectors or external organizations you\'re interested in collaborating with? (e.g., healthcare, technology, manufacturing)', ''))
+                )
+                
+                db.session.add(researcher)
+                loaded += 1
+            
+            db.session.commit()
+            print(f"✓ Loaded {loaded} internal researchers from file 1\n")
+            total_loaded += loaded
+            
+        except FileNotFoundError:
+            print(f"✗ File not found: {file2}\n")
+        except Exception as e:
+            print(f"✗ Error loading internal researchers (file 1): {str(e)}\n")
+            db.session.rollback()
+        
+        # File 3: Additional Internal Researchers
+        try:
+            file3 = 'AdditonalInternalHumberResearcher.xlsx'
+            print(f"Loading additional internal researchers from: {file3}")
+            
+            df = pd.read_excel(file3)
+            loaded = 0
+            
+            for _, row in df.iterrows():
+                email = clean_text(row.get('Humber Email', ''))
+                name = clean_text(row.get('Researcher Full Name', ''))
+                
+                if not email or not name:
+                    continue
+                
+                # Check if already exists
+                if Researcher.query.filter_by(email=email).first():
+                    print(f"  ⏭ Skipping duplicate: {email}")
+                    continue
+                
+                # Get job info
+                job_title = clean_text(row.get('Job Title', ''))
+                job_status = clean_text(row.get('Job Status', ''))
+                experience = f"{job_title}"
+                if job_status:
+                    experience += f" ({job_status})"
+                
+                researcher = Researcher(
+                    name=name,
+                    email=email,
+                    organization='Humber Polytechnic',
+                    researcher_type='internal',
+                    faculty_department=clean_text(row.get('Faculty', '')),
+                    primary_areas=clean_text(row.get('Research Interest Keywords', '')),
+                    experience_summary=experience,
+                    sectors_interested=''
+                )
+                
+                db.session.add(researcher)
+                loaded += 1
+            
+            db.session.commit()
+            print(f"✓ Loaded {loaded} internal researchers from file 2\n")
+            total_loaded += loaded
+            
+        except FileNotFoundError:
+            print(f"✗ File not found: {file3}\n")
+        except Exception as e:
+            print(f"✗ Error loading internal researchers (file 2): {str(e)}\n")
+            db.session.rollback()
+        
+        # Summary
+        print("="*60)
+        print(f"Data Loading Complete!")
+        print(f"Total researchers loaded: {total_loaded}")
+        print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
+        print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
+        print("="*60 + "\n")
+        
+        return total_loaded
 
 if __name__ == '__main__':
-    with app.app_context():
-        load_all_data()
+    load_all_data()
