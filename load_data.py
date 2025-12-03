@@ -33,27 +33,21 @@ def load_external_researchers(file_path):
             print(f"  ⏭ Skipping duplicate: {email}")
             continue
         
+        # Column names from Excel (using dict.get with exact column names)
+        org_focus_col = "What is your organization's primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)"
+        challenge_col = "Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate"
+        expertise_col = "What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)"
+        lab_tours_col = "Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to "
+        
         researcher = Researcher(
             name=clean_text(row.get('Your Name', '')),
             email=email,
             organization=clean_text(row.get('Your Orgnization', '')),
             researcher_type='external',
-            organization_focus=clean_text(row.get(
-                'What is your organization's primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)',
-                ''
-            )),
-            challenge_description=clean_text(row.get(
-                'Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate',
-                ''
-            )),
-            expertise_sought=clean_text(row.get(
-                'What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)',
-                ''
-            )),
-            lab_tours_interested=clean_text(row.get(
-                'Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to ',
-                ''
-            ))
+            organization_focus=clean_text(row.get(org_focus_col, '')),
+            challenge_description=clean_text(row.get(challenge_col, '')),
+            expertise_sought=clean_text(row.get(expertise_col, '')),
+            lab_tours_interested=clean_text(row.get(lab_tours_col, ''))
         )
         
         db.session.add(researcher)
@@ -84,24 +78,20 @@ def load_internal_researchers_file1(file_path):
             print(f"  ⏭ Skipping duplicate: {email}")
             continue
         
+        # Column names from Excel
+        primary_areas_col = "What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics)."
+        experience_col = "Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)"
+        sectors_col = "What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)"
+        
         researcher = Researcher(
             name=clean_text(row.get('Your Name', '')),
             email=email,
             organization='Humber Polytechnic',
             researcher_type='internal',
             faculty_department=clean_text(row.get('Your Faculty/Department', '')),
-            primary_areas=clean_text(row.get(
-                'What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics).',
-                ''
-            )),
-            experience_summary=clean_text(row.get(
-                'Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)',
-                ''
-            )),
-            sectors_interested=clean_text(row.get(
-                'What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)',
-                ''
-            ))
+            primary_areas=clean_text(row.get(primary_areas_col, '')),
+            experience_summary=clean_text(row.get(experience_col, '')),
+            sectors_interested=clean_text(row.get(sectors_col, ''))
         )
         
         db.session.add(researcher)
@@ -161,32 +151,32 @@ def load_all_data():
     print("Loading Researcher Data into Database")
     print("="*60 + "\n")
     
-    with app.app_context():
-        # Load external researchers
-        external_count = load_external_researchers(
-            'ResearchUnplugged_PartneringSessions!_ExternalResearcher.xlsx'
-        )
-        
-        # Load internal researchers from both files
-        internal_count1 = load_internal_researchers_file1(
-            'ResearchUnplugged_PartneringSessions!1_InternalHumber.xlsx'
-        )
-        
-        internal_count2 = load_internal_researchers_file2(
-            'AdditonalInternalHumberResearcher.xlsx'
-        )
-        
-        total_internal = internal_count1 + internal_count2
-        total = external_count + total_internal
-        
-        print("\n" + "="*60)
-        print("Data Loading Summary:")
-        print(f"  External Researchers: {external_count}")
-        print(f"  Internal Researchers: {total_internal} ({internal_count1} + {internal_count2})")
-        print(f"  Total Loaded: {total}")
-        print("="*60 + "\n")
-        
-        return total
+    # Load external researchers
+    external_count = load_external_researchers(
+        'ResearchUnplugged_PartneringSessions!_ExternalResearcher.xlsx'
+    )
+    
+    # Load internal researchers from both files
+    internal_count1 = load_internal_researchers_file1(
+        'ResearchUnplugged_PartneringSessions!1_InternalHumber.xlsx'
+    )
+    
+    internal_count2 = load_internal_researchers_file2(
+        'AdditonalInternalHumberResearcher.xlsx'
+    )
+    
+    total_internal = internal_count1 + internal_count2
+    total = external_count + total_internal
+    
+    print("\n" + "="*60)
+    print("Data Loading Summary:")
+    print(f"  External Researchers: {external_count}")
+    print(f"  Internal Researchers: {total_internal} ({internal_count1} + {internal_count2})")
+    print(f"  Total Loaded: {total}")
+    print("="*60 + "\n")
+    
+    return total
 
 if __name__ == '__main__':
-    load_all_data()
+    with app.app_context():
+        load_all_data()
