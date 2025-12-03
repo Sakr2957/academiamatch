@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Register as Humber Researcher - AcademiaMatch{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <h1 style="color: #003C71; margin-bottom: 1rem;">Register as Humber Researcher</h1>
+    <p style="color: #666; margin-bottom: 2rem;">
+        Join our research community and connect with external researchers seeking collaboration.
+    </p>
+    
+    {% if error %}
+    <div class="error">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Your Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Dr. Jane Smith">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Humber Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="jane.smith@humber.ca">
+            </div>
+            
+            <div class="form-group">
+                <label for="faculty_department">Faculty/Department *</label>
+                <input type="text" id="faculty_department" name="faculty_department" required 
+                    placeholder="e.g., Faculty of Applied Science and Technology">
+            </div>
+            
+            <div class="form-group">
+                <label for="primary_areas">Primary Research Areas *</label>
+                <textarea id="primary_areas" name="primary_areas" rows="3" required 
+                    placeholder="e.g., machine learning, food security, sustainable packaging, behavioral economics"></textarea>
+                <small style="color: #666;">Please list key words or phrases</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="experience_summary">Experience Summary</label>
+                <textarea id="experience_summary" name="experience_summary" rows="4" 
+                    placeholder="Brief summary of your experience or capabilities relevant to collaborative research"></textarea>
+                <small style="color: #666;">e.g., technical skills, related past work, specialized expertise</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="sectors_interested">Sectors/Challenges of Interest *</label>
+                <textarea id="sectors_interested" name="sectors_interested" rows="3" required 
+                    placeholder="e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity"></textarea>
+                <small style="color: #666;">What sectors or societal challenges are you interested in addressing?</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">✓ Register</button>
+                <a href="/" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

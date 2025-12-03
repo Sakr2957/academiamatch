@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Your Matches - AcademiaMatch{% endblock %}
+
+{% block extra_css %}
+<style>
+    .researcher-info {
+        background: linear-gradient(135deg, #003C71, #005a9c);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .researcher-info h1 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .researcher-info p {
+        opacity: 0.9;
+    }
+    
+    .matches-header {
+        margin: 2rem 0 1rem;
+    }
+    
+    .matches-header h2 {
+        color: #003C71;
+    }
+    
+    .match-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid #F7B500;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .match-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .match-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #003C71;
+        margin-bottom: 0.25rem;
+    }
+    
+    .match-org {
+        color: #666;
+        font-size: 0.95rem;
+    }
+    
+    .match-score {
+        text-align: right;
+    }
+    
+    .score-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #F7B500;
+    }
+    
+    .score-label {
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .match-interests {
+        margin: 1rem 0;
+    }
+    
+    .interests-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .interests-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .tag {
+        background: #e8f4f8;
+        color: #003C71;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .email-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #003C71;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin-top: 1rem;
+    }
+    
+    .email-btn:hover {
+        background: #002855;
+        transform: translateY(-2px);
+    }
+    
+    .no-matches {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="researcher-info">
+    <h1>{{ researcher.name }}</h1>
+    <p>{{ researcher.organization }}</p>
+    {% if researcher.faculty_department %}
+    <p>{{ researcher.faculty_department }}</p>
+    {% endif %}
+</div>
+
+<div class="matches-header">
+    <h2>🎯 Your Top Matches</h2>
+    <p style="color: #666;">Based on research interests and expertise alignment</p>
+</div>
+
+{% if matches %}
+    {% for match in matches %}
+    <div class="match-card">
+        <div class="match-header">
+            <div>
+                <div class="match-name">{{ match.name }}</div>
+                <div class="match-org">{{ match.organization }}{% if match.department %} • {{ match.department }}{% endif %}</div>
+            </div>
+            <div class="match-score">
+                <div class="score-number">{{ match.score_percent }}%</div>
+                <div class="score-label">Match Score</div>
+            </div>
+        </div>
+        
+        {% if match.interests %}
+        <div class="match-interests">
+            <div class="interests-label">Research Interests:</div>
+            <div class="interests-tags">
+                {% for interest in match.interests.split(',')[:5] %}
+                <span class="tag">{{ interest.strip() }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <a href="mailto:{{ match.email }}?subject=Research%20Collaboration%20Inquiry&body=Dear%20{{ match.name }},%0D%0A%0D%0AI%20am%20{{ researcher.name }}%20from%20{{ researcher.organization }}.%20I%20recently%20came%20across%20your%20research%20profile%20and%20am%20particularly%20interested%20in%20potential%20collaboration.%0D%0A%0D%0AOur%20research%20interests%20align%20with%20a%20match%20score%20of%20{{ match.score_percent }}%25.%0D%0A%0D%0AI%20would%20be%20grateful%20for%20the%20opportunity%20to%20discuss%20potential%20collaboration.%0D%0A%0D%0ABest%20regards,%0D%0A{{ researcher.name }}%0D%0A{{ researcher.email }}" 
+           class="email-btn">
+            📧 Send Email
+        </a>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card no-matches">
+        <h3>No matches found yet</h3>
+        <p>We couldn't find any matching researchers at this time. Please check back later as more researchers join the platform.</p>
+    </div>
+{% endif %}
+
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="/" class="btn btn-secondary">← Back to Home</a>
+</div>
+{% endblock %}

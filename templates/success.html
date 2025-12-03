@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Registration Successful - AcademiaMatch{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 3rem auto; text-align: center;">
+    <div class="card">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+        <h1 style="color: #003C71; margin-bottom: 1rem;">Registration Successful!</h1>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 2rem;">
+            Your profile has been added to our database.
+        </p>
+        
+        <div class="success" style="text-align: left;">
+            <strong>What's Next?</strong>
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                <li>You can now search for matches using your email: <strong>{{ email }}</strong></li>
+                <li>Other researchers can discover you in their match results</li>
+                <li>You'll receive personalized match recommendations</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+            <a href="/matches/{{ email }}" class="btn">🔍 Find My Matches</a>
+            <a href="/" class="btn btn-secondary">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

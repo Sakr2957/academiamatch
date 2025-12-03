@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 3rem 0;
+    }
+    
+    .hero h1 {
+        font-size: 3rem;
+        color: #003C71;
+        margin-bottom: 1rem;
+    }
+    
+    .hero p {
+        font-size: 1.25rem;
+        color: #666;
+        max-width: 800px;
+        margin: 0 auto 2rem;
+    }
+    
+    .badge {
+        display: inline-block;
+        background: #003C71;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-top: 4px solid #003C71;
+    }
+    
+    .stat-card.external {
+        border-top-color: #F7B500;
+    }
+    
+    .stat-number {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #003C71;
+    }
+    
+    .stat-card.external .stat-number {
+        color: #F7B500;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    .search-box {
+        max-width: 600px;
+        margin: 3rem auto;
+    }
+    
+    .search-box h2 {
+        text-align: center;
+        color: #003C71;
+        margin-bottom: 1rem;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .search-form input {
+        margin-bottom: 0;
+    }
+    
+    .register-section {
+        margin: 3rem 0;
+        text-align: center;
+    }
+    
+    .register-section h2 {
+        color: #003C71;
+        margin-bottom: 2rem;
+    }
+    
+    .register-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .how-it-works {
+        margin: 4rem 0;
+    }
+    
+    .how-it-works h2 {
+        text-align: center;
+        color: #003C71;
+        margin-bottom: 2rem;
+    }
+    
+    .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+    
+    .step {
+        text-align: center;
+    }
+    
+    .step-number {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #003C71, #F7B500);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 auto 1rem;
+    }
+    
+    .step h3 {
+        color: #003C71;
+        margin-bottom: 0.5rem;
+    }
+    
+    .step p {
+        color: #666;
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="badge">AI-Powered Research Collaboration</div>
+    <h1>Connect Researchers.<br>Build Partnerships.</h1>
+    <p>Match external researchers with Humber Polytechnic faculty based on research interests using advanced semantic analysis powered by Sentence Transformers.</p>
+</div>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="stat-number">{{ internal_count }}</div>
+        <div class="stat-label">Humber Researchers</div>
+    </div>
+    <div class="stat-card external">
+        <div class="stat-number">{{ external_count }}</div>
+        <div class="stat-label">External Researchers</div>
+    </div>
+</div>
+
+<div class="search-box card">
+    <h2>🔍 Find Your Matches</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 1.5rem;">
+        Enter your email to discover researchers with aligned interests
+    </p>
+    <form method="POST" action="/search" class="search-form">
+        <input type="email" name="email" placeholder="your.email@example.com" required>
+        <button type="submit" class="btn">Search</button>
+    </form>
+</div>
+
+<div class="register-section">
+    <h2>New Researcher? Register Now</h2>
+    <div class="register-buttons">
+        <a href="/register/external" class="btn">👤 Register as External Researcher</a>
+        <a href="/register/internal" class="btn btn-primary">🎓 Register as Humber Researcher</a>
+    </div>
+</div>
+
+<div class="how-it-works">
+    <h2>How It Works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Register or Search</h3>
+            <p>Register as a new researcher or search by email if already registered</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>AI Matching</h3>
+            <p>Our algorithm analyzes research interests using semantic similarity</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Connect</h3>
+            <p>View matches and contact researchers via auto-generated email templates</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
