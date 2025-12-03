@@ -51,9 +51,9 @@ def load_all_data():
                     organization=clean_text(row.get('Your Orgnization', '')),
                     researcher_type='external',
                     organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
-                    challenge_description=clean_text(row.get('Describe a specific challenge or project where you\'re seeking collaboration or expertise from Humber Polytechnic faculty.', '')),
-                    expertise_sought=clean_text(row.get('What specific expertise or resources are you looking for from Humber Polytechnic? (e.g., data analysis, prototyping, regulatory guidance)', '')),
-                    lab_tours_interested=clean_text(row.get('Are you interested in touring any of Humber\'s specialized labs or facilities? If yes, please specify which areas interest you (e.g., AI, manufacturing, health sciences).', ''))
+                    challenge_description=clean_text(row.get('Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate', '')),
+                    expertise_sought=clean_text(row.get('What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)', '')),
+                    lab_tours_interested=clean_text(row.get('Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to ', ''))
                 )
                 
                 db.session.add(researcher)
