@@ -41,21 +41,37 @@ class Researcher(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-# Initialize database tables (for Gunicorn deployments)
-with app.app_context():
-    db.create_all()
+# Helper function to ensure tables exist (called on first request)
+_tables_created = False
+def ensure_tables():
+    global _tables_created
+    if not _tables_created:
+        try:
+            with app.app_context():
+                db.create_all()
+            _tables_created = True
+        except Exception as e:
+            print(f"Warning: Could not create tables: {e}")
+            # Don't crash, just log the error
 
 # Routes
 @app.route('/')
 def index():
-    internal_count = Researcher.query.filter_by(researcher_type='internal').count()
-    external_count = Researcher.query.filter_by(researcher_type='external').count()
+    ensure_tables()  # Create tables on first request if needed
+    try:
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+    except:
+        # If database not accessible, show 0
+        internal_count = 0
+        external_count = 0
     return render_template('index.html', 
                          internal_count=internal_count, 
                          external_count=external_count)
 
 @app.route('/register/external', methods=['GET', 'POST'])
 def register_external():
+    ensure_tables()
     if request.method == 'POST':
         try:
             researcher = Researcher(
@@ -77,6 +93,7 @@ def register_external():
 
 @app.route('/register/internal', methods=['GET', 'POST'])
 def register_internal():
+    ensure_tables()
     if request.method == 'POST':
         try:
             researcher = Researcher(
@@ -130,8 +147,13 @@ def matches(email):
 
 @app.route('/api/counts')
 def api_counts():
-    internal_count = Researcher.query.filter_by(researcher_type='internal').count()
-    external_count = Researcher.query.filter_by(researcher_type='external').count()
+    ensure_tables()
+    try:
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+    except:
+        internal_count = 0
+        external_count = 0
     return jsonify({
         'internal': internal_count,
         'external': external_count,
@@ -146,6 +168,9 @@ def admin_load_data():
     Visit this URL once after deployment to populate the database.
     URL: https://academiamatch.onrender.com/admin/load-data
     """
+    # Ensure tables exist before loading data
+    ensure_tables()
+    
     try:
         from load_data import load_all_data
         
