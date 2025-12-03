@@ -4,7 +4,15 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///academiamatch.db'
+
+# Use PostgreSQL (Supabase) if DATABASE_URL is set, otherwise fallback to SQLite
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///academiamatch.db')
+
+# Fix for SQLAlchemy 1.4+ (Render/Heroku use 'postgres://' but SQLAlchemy needs 'postgresql://')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
@@ -178,7 +186,7 @@ def admin_load_data():
         <head><title>Data Loading Complete</title></head>
         <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
             <h1 style="color: #27ae60;">✅ Success!</h1>
-            <p>Successfully loaded <strong>{total} researchers</strong> into the database.</p>
+            <p>Successfully loaded <strong>{total} researchers</strong> into the Supabase database.</p>
             <h3>Loading Summary:</h3>
             <ul>
                 <li>Internal Researchers (Humber): <strong>{internal_count}</strong></li>
@@ -188,13 +196,15 @@ def admin_load_data():
             <p><a href="/" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Homepage</a></p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-                Data loaded from Excel files. You can now use the matching functionality!
+                Data loaded from Excel files into PostgreSQL (Supabase). Your data is now persistent!
             </p>
         </body>
         </html>
         """
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         return f"""
         <html>
         <head><title>Error Loading Data</title></head>
@@ -203,6 +213,8 @@ def admin_load_data():
             <p>Failed to load data from Excel files.</p>
             <h3>Error Details:</h3>
             <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <h3>Full Traceback:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 11px;">{error_details}</pre>
             <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
             <hr>
             <p style="font-size: 12px; color: #666;">
