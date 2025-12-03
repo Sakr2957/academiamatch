@@ -1,72 +1,82 @@
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-# Load model once (will be cached)
-model = None
+def get_text_for_matching(researcher):
+    """Combine all relevant text fields for matching"""
+    texts = []
+    
+    if researcher.primary_areas:
+        texts.append(researcher.primary_areas)
+    if researcher.experience_summary:
+        texts.append(researcher.experience_summary)
+    if researcher.sectors_interested:
+        texts.append(researcher.sectors_interested)
+    if researcher.organization_focus:
+        texts.append(researcher.organization_focus)
+    if researcher.challenge_description:
+        texts.append(researcher.challenge_description)
+    if researcher.expertise_sought:
+        texts.append(researcher.expertise_sought)
+    
+    return ' '.join(texts) if texts else ''
 
-def get_model():
-    global model
-    if model is None:
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-    return model
-
-def get_researcher_text(researcher):
-    """Extract text representation of researcher for matching"""
-    if researcher.researcher_type == 'internal':
-        return f"{researcher.primary_areas or ''} {researcher.experience_summary or ''} {researcher.sectors_interested or ''}"
-    else:
-        return f"{researcher.organization_focus or ''} {researcher.challenge_description or ''} {researcher.expertise_sought or ''}"
-
-def find_matches(current_researcher, top_n=5):
-    """Find top N matching researchers"""
+def find_matches(researcher, top_n=5):
+    """Find top N matching researchers using TF-IDF"""
     from app import Researcher
     
-    # Get opposite type researchers
-    opposite_type = 'external' if current_researcher.researcher_type == 'internal' else 'internal'
-    candidates = Researcher.query.filter_by(researcher_type=opposite_type).all()
+    # Determine opposite type
+    if researcher.researcher_type == 'internal':
+        target_type = 'external'
+    else:
+        target_type = 'internal'
+    
+    # Get all researchers of opposite type
+    candidates = Researcher.query.filter_by(researcher_type=target_type).all()
     
     if not candidates:
         return []
     
-    # Get model
-    model = get_model()
+    # Get text for query researcher
+    query_text = get_text_for_matching(researcher)
     
-    # Encode current researcher
-    current_text = get_researcher_text(current_researcher)
-    current_embedding = model.encode([current_text])[0]
+    if not query_text.strip():
+        return []
     
-    # Encode all candidates
-    candidate_texts = [get_researcher_text(c) for c in candidates]
-    candidate_embeddings = model.encode(candidate_texts)
+    # Get texts for all candidates
+    candidate_texts = [get_text_for_matching(c) for c in candidates]
     
-    # Calculate similarities
-    similarities = cosine_similarity([current_embedding], candidate_embeddings)[0]
+    # Filter out empty texts
+    valid_candidates = [(c, t) for c, t in zip(candidates, candidate_texts) if t.strip()]
     
-    # Get top N indices
+    if not valid_candidates:
+        return []
+    
+    candidates, candidate_texts = zip(*valid_candidates)
+    
+    # Create TF-IDF vectors
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=500)
+    
+    # Fit on all texts including query
+    all_texts = [query_text] + list(candidate_texts)
+    tfidf_matrix = vectorizer.fit_transform(all_texts)
+    
+    # Calculate cosine similarity
+    query_vector = tfidf_matrix[0:1]
+    candidate_vectors = tfidf_matrix[1:]
+    
+    similarities = cosine_similarity(query_vector, candidate_vectors)[0]
+    
+    # Get top N matches
     top_indices = np.argsort(similarities)[::-1][:top_n]
     
-    # Prepare results
-    results = []
+    matches = []
     for idx in top_indices:
-        candidate = candidates[idx]
         score = float(similarities[idx])
-        
-        # Get interests/areas
-        if candidate.researcher_type == 'internal':
-            interests = candidate.primary_areas or ''
-        else:
-            interests = candidate.expertise_sought or ''
-        
-        results.append({
-            'id': candidate.id,
-            'name': candidate.name,
-            'email': candidate.email,
-            'organization': candidate.organization,
-            'department': candidate.faculty_department or '',
-            'interests': interests,
-            'score': score,
-            'score_percent': int(score * 100)
-        })
+        if score > 0:  # Only include matches with some similarity
+            matches.append({
+                'researcher': candidates[idx],
+                'score': round(score * 100, 1)  # Convert to percentage
+            })
     
-    return results
+    return matches
