@@ -130,5 +130,87 @@ def api_counts():
         'total': internal_count + external_count
     })
 
+# Admin route to load initial data from Excel files
+@app.route('/admin/load-data')
+def admin_load_data():
+    """
+    Load data from Excel files into the database.
+    Visit this URL once after deployment to populate the database.
+    URL: https://academiamatch.onrender.com/admin/load-data
+    """
+    try:
+        from load_data import load_all_data
+        
+        # Check if data already loaded
+        existing_count = Researcher.query.count()
+        if existing_count > 0:
+            return f"""
+            <html>
+            <head><title>Data Already Loaded</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #f39c12;">⚠️ Data Already Exists</h1>
+                <p>The database already contains <strong>{existing_count} researchers</strong>.</p>
+                <p>Loading data again might create duplicates.</p>
+                <h3>Current Database Status:</h3>
+                <ul>
+                    <li>Internal Researchers: {Researcher.query.filter_by(researcher_type='internal').count()}</li>
+                    <li>External Researchers: {Researcher.query.filter_by(researcher_type='external').count()}</li>
+                    <li>Total: {existing_count}</li>
+                </ul>
+                <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+                <hr>
+                <p style="font-size: 12px; color: #666;">
+                    If you want to reload data, delete the database first or clear all researchers.
+                </p>
+            </body>
+            </html>
+            """
+        
+        # Load data
+        total = load_all_data()
+        
+        # Get final counts
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+        
+        return f"""
+        <html>
+        <head><title>Data Loading Complete</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Success!</h1>
+            <p>Successfully loaded <strong>{total} researchers</strong> into the database.</p>
+            <h3>Loading Summary:</h3>
+            <ul>
+                <li>Internal Researchers (Humber): <strong>{internal_count}</strong></li>
+                <li>External Researchers: <strong>{external_count}</strong></li>
+                <li>Total: <strong>{total}</strong></li>
+            </ul>
+            <p><a href="/" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Homepage</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Data loaded from Excel files. You can now use the matching functionality!
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Error Loading Data</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to load data from Excel files.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Make sure the Excel files are in the root directory of your repository.
+            </p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
