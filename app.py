@@ -92,55 +92,6 @@ def index():
                          internal_count=internal_count, 
                          external_count=external_count)
 
-@app.route('/register/external', methods=['GET', 'POST'])
-def register_external():
-    ensure_tables()
-    if request.method == 'POST':
-        try:
-            researcher = Researcher(
-                name=request.form['name'],
-                email=request.form['email'],
-                organization=request.form['organization'],
-                researcher_type='external',
-                organization_focus=request.form.get('organization_focus', ''),
-                challenge_description=request.form.get('challenge_description', ''),
-                expertise_sought=request.form.get('expertise_sought', ''),
-                lab_tours_interested=request.form.get('lab_tours_interested', '')
-            )
-            db.session.add(researcher)
-            db.session.commit()
-            return redirect(url_for('success', email=researcher.email))
-        except Exception as e:
-            return render_template('register_external.html', error=str(e))
-    return render_template('register_external.html')
-
-@app.route('/register/internal', methods=['GET', 'POST'])
-def register_internal():
-    ensure_tables()
-    if request.method == 'POST':
-        try:
-            researcher = Researcher(
-                name=request.form['name'],
-                email=request.form['email'],
-                organization='Humber Polytechnic',
-                researcher_type='internal',
-                faculty_department=request.form.get('faculty_department', ''),
-                primary_areas=request.form.get('primary_areas', ''),
-                experience_summary=request.form.get('experience_summary', ''),
-                sectors_interested=request.form.get('sectors_interested', '')
-            )
-            db.session.add(researcher)
-            db.session.commit()
-            return redirect(url_for('success', email=researcher.email))
-        except Exception as e:
-            return render_template('register_internal.html', error=str(e))
-    return render_template('register_internal.html')
-
-@app.route('/success')
-def success():
-    email = request.args.get('email', '')
-    return render_template('success.html', email=email)
-
 @app.route('/search', methods=['POST'])
 def search():
     email = request.form.get('email', '').strip()
