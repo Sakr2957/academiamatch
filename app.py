@@ -223,6 +223,58 @@ def admin_load_data():
         </html>
         """, 500
 
+@app.route('/admin/nuclear-reset')
+def admin_nuclear_reset():
+    """
+    NUCLEAR OPTION: Drop and recreate all tables.
+    This will completely wipe the database and start fresh.
+    URL: https://academiamatch.onrender.com/admin/nuclear-reset
+    """
+    try:
+        # Drop all tables
+        db.session.execute(db.text('DROP TABLE IF EXISTS email_log CASCADE'))
+        db.session.execute(db.text('DROP TABLE IF EXISTS match CASCADE'))
+        db.session.execute(db.text('DROP TABLE IF EXISTS researcher CASCADE'))
+        db.session.commit()
+        
+        # Recreate all tables
+        db.create_all()
+        
+        return """
+        <html>
+        <head>
+            <title>Database Reset Complete</title>
+            <meta http-equiv="refresh" content="3;url=/admin/force-reload">
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Database Reset Complete!</h1>
+            <p>All tables have been dropped and recreated.</p>
+            <h2 style="color: #f39c12;">⏳ Redirecting to load data in 3 seconds...</h2>
+            <p>If not redirected, <a href="/admin/force-reload" style="color: #3498db; font-weight: bold;">click here</a> to load data.</p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        <html>
+        <head><title>Reset Error</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to reset database.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <details>
+                <summary>Full Traceback</summary>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{error_details}</pre>
+            </details>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
 @app.route('/admin/force-reload')
 def admin_force_reload():
     """
