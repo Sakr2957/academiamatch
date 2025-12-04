@@ -366,8 +366,8 @@ def match_list():
     try:
         from get_all_matches import get_all_matches
         
-        # Get all matches
-        all_matches = get_all_matches(top_n=3)
+        # Get all matches (only best match per researcher to reduce memory usage)
+        all_matches = get_all_matches(top_n=1)
         
         # Get email logs
         email_logs = EmailLog.query.all()

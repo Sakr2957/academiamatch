@@ -3,12 +3,12 @@ Helper function to get all matches between internal and external researchers.
 This is imported by app.py for the match list page.
 """
 
-def get_all_matches(top_n=3):
+def get_all_matches(top_n=1):
     """
     Get all matches between internal and external researchers.
     
     Args:
-        top_n: Number of top matches per internal researcher
+        top_n: Number of top matches per internal researcher (default: 1 for best match only)
         
     Returns:
         List of match dictionaries
