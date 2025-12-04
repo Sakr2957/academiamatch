@@ -131,79 +131,77 @@ def compute_and_store_matches_incremental(batch_number=1, batch_size=10):
 
 def load_all_data():
     """Load all Excel files into the database"""
-    from app import app
+    # Use the caller's app context (don't create a new one)
+    total_loaded = 0
     
-    with app.app_context():
-        total_loaded = 0
-        
-        # Load internal researchers
-        try:
-            print("="*60)
-            print("Loading Internal Researchers (Humber)...")
-            print("="*60 + "\n")
-            
-            df_internal = pd.read_excel('HumberInternalResearch.xlsx')
-            
-            for _, row in df_internal.iterrows():
-                researcher = Researcher(
-                    name=str(row.get('Your Name', '')),
-                    email=str(row.get('Email Address', '')).lower().strip(),
-                    researcher_type='internal',
-                    organization='Humber Polytechnic',
-                    faculty_department=clean_text(row.get('Your Faculty/Department', '')),
-                    primary_areas=clean_text(row.get('What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics).', '')),
-                    experience_summary=clean_text(row.get('Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)', '')),
-                    sectors_interested=clean_text(row.get('What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)', ''))
-                )
-                db.session.add(researcher)
-                total_loaded += 1
-            
-            db.session.commit()
-            print(f"✓ Loaded {len(df_internal)} internal researchers\n")
-            
-        except Exception as e:
-            print(f"✗ Error loading internal researchers: {str(e)}\n")
-            db.session.rollback()
-        
-        # Load external researchers
-        try:
-            print("="*60)
-            print("Loading External Researchers...")
-            print("="*60 + "\n")
-            
-            df_external = pd.read_excel('ExternalResearch.xlsx')
-            
-            for _, row in df_external.iterrows():
-                researcher = Researcher(
-                    name=str(row.get('Your Name', '')),
-                    email=str(row.get('Email Address', '')).lower().strip(),
-                    researcher_type='external',
-                    organization=clean_text(row.get('Your Orgnization', '')),
-                    organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
-                    challenge_description=clean_text(row.get('Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate', '')),
-                    expertise_sought=clean_text(row.get('What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)', '')),
-                    lab_tours_interested=clean_text(row.get('Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to ', ''))
-                )
-                db.session.add(researcher)
-                total_loaded += 1
-            
-            db.session.commit()
-            print(f"✓ Loaded {len(df_external)} external researchers\n")
-            
-        except Exception as e:
-            print(f"✗ Error loading external researchers: {str(e)}\n")
-            db.session.rollback()
-        
-        # Summary
+    # Load internal researchers
+    try:
         print("="*60)
-        print(f"Data Loading Complete!")
-        print(f"Total researchers loaded: {total_loaded}")
-        print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
-        print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
-        print("\n⚠️  Next: Visit /admin/compute-matches to pre-compute matches")
-        print("="*60)
+        print("Loading Internal Researchers (Humber)...")
+        print("="*60 + "\n")
         
-        return total_loaded
+        df_internal = pd.read_excel('HumberInternalResearch.xlsx')
+        
+        for _, row in df_internal.iterrows():
+            researcher = Researcher(
+                name=str(row.get('Your Name', '')),
+                email=str(row.get('Email Address', '')).lower().strip(),
+                researcher_type='internal',
+                organization='Humber Polytechnic',
+                faculty_department=clean_text(row.get('Your Faculty/Department', '')),
+                primary_areas=clean_text(row.get('What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics).', '')),
+                experience_summary=clean_text(row.get('Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)', '')),
+                sectors_interested=clean_text(row.get('What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)', ''))
+            )
+            db.session.add(researcher)
+            total_loaded += 1
+        
+        db.session.commit()
+        print(f"✓ Loaded {len(df_internal)} internal researchers\n")
+        
+    except Exception as e:
+        print(f"✗ Error loading internal researchers: {str(e)}\n")
+        db.session.rollback()
+    
+    # Load external researchers
+    try:
+        print("="*60)
+        print("Loading External Researchers...")
+        print("="*60 + "\n")
+        
+        df_external = pd.read_excel('ExternalResearch.xlsx')
+        
+        for _, row in df_external.iterrows():
+            researcher = Researcher(
+                name=str(row.get('Your Name', '')),
+                email=str(row.get('Email Address', '')).lower().strip(),
+                researcher_type='external',
+                organization=clean_text(row.get('Your Orgnization', '')),
+                organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
+                challenge_description=clean_text(row.get('Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate', '')),
+                expertise_sought=clean_text(row.get('What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)', '')),
+                lab_tours_interested=clean_text(row.get('Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to ', ''))
+            )
+            db.session.add(researcher)
+            total_loaded += 1
+        
+        db.session.commit()
+        print(f"✓ Loaded {len(df_external)} external researchers\n")
+        
+    except Exception as e:
+        print(f"✗ Error loading external researchers: {str(e)}\n")
+        db.session.rollback()
+    
+    # Summary
+    print("="*60)
+    print(f"Data Loading Complete!")
+    print(f"Total researchers loaded: {total_loaded}")
+    print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
+    print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
+    print("\n⚠️  Next: Visit /admin/compute-matches to pre-compute matches")
+    print("="*60)
+    
+    return total_loaded
 
 if __name__ == '__main__':
     load_all_data()
