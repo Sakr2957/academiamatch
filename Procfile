@@ -1,1 +1,1 @@
-web: gunicorn app:app --workers=2 --threads=4 --timeout=600 --max-requests=1000 --max-requests-jitter=50 --preload --worker-class=gthread
+web: gunicorn app:app --workers=1 --threads=4 --timeout=900 --worker-class=gthread --preload --max-requests=1000 --max-requests-jitter=50

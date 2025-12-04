@@ -46,13 +46,13 @@ def compute_and_store_matches():
     internal_researchers = Researcher.query.filter_by(researcher_type='internal').all()
     total_researchers = len(internal_researchers)
     print(f"Computing matches for {total_researchers} internal researchers...\n")
-    print("Processing in batches of 5 to optimize memory usage...\n")
+    print("Processing in batches of 3 to optimize memory usage...\n")
     
     matches_stored = 0
     errors = 0
     
-    # Process in smaller batches of 5 to reduce memory pressure
-    batch_size = 5
+    # Process in smaller batches of 3 to reduce memory pressure
+    batch_size = 3
     
     for batch_start in range(0, total_researchers, batch_size):
         batch_end = min(batch_start + batch_size, total_researchers)
