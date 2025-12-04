@@ -416,26 +416,6 @@ def admin_compute_matches():
             </body>
             </html>
             """
-                <li>Internal Researchers: <strong>{internal_count}</strong></li>
-                <li>External Researchers: <strong>{external_count}</strong></li>
-                <li>Matches Stored: <strong>{match_count}</strong></li>
-            </ul>
-            <hr>
-            <h2 style="color: #27ae60;">✅ All Done!</h2>
-            <p>Everything is ready. Matches are cached for instant access.</p>
-            <p>
-                <a href="/match-list" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">📊 View All Matches</a>
-                <a href="/" style="display: inline-block; background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Go to Homepage</a>
-            </p>
-            <hr>
-            <p style="font-size: 12px; color: #666;">
-                ✅ Data loaded from Excel files<br>
-                ✅ Matches pre-computed and cached<br>
-                ✅ Ready for use!
-            </p>
-        </body>
-        </html>
-        """
         
     except Exception as e:
         import traceback
