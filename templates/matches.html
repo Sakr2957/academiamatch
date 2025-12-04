@@ -151,7 +151,7 @@
                 <div class="match-org">{{ match.organization }}{% if match.department %} • {{ match.department }}{% endif %}</div>
             </div>
             <div class="match-score">
-                <div class="score-number">{{ match.score_percent }}%</div>
+                <div class="score-number">{{ match.similarity_percentage }}%</div>
                 <div class="score-label">Match Score</div>
             </div>
         </div>
@@ -167,7 +167,7 @@
         </div>
         {% endif %}
         
-        <a href="mailto:{{ match.email }}?subject=Research%20Collaboration%20Inquiry&body=Dear%20{{ match.name }},%0D%0A%0D%0AI%20am%20{{ researcher.name }}%20from%20{{ researcher.organization }}.%20I%20recently%20came%20across%20your%20research%20profile%20and%20am%20particularly%20interested%20in%20potential%20collaboration.%0D%0A%0D%0AOur%20research%20interests%20align%20with%20a%20match%20score%20of%20{{ match.score_percent }}%25.%0D%0A%0D%0AI%20would%20be%20grateful%20for%20the%20opportunity%20to%20discuss%20potential%20collaboration.%0D%0A%0D%0ABest%20regards,%0D%0A{{ researcher.name }}%0D%0A{{ researcher.email }}" 
+        <a href="mailto:{{ match.email }}?subject=Research%20Collaboration%20Inquiry&body=Dear%20{{ match.name }},%0D%0A%0D%0AI%20am%20{{ researcher.name }}%20from%20{{ researcher.organization }}.%20I%20recently%20came%20across%20your%20research%20profile%20and%20am%20particularly%20interested%20in%20potential%20collaboration.%0D%0A%0D%0AOur%20research%20interests%20align%20with%20a%20match%20score%20of%20{{ match.similarity_percentage }}%25.%0D%0A%0D%0AI%20would%20be%20grateful%20for%20the%20opportunity%20to%20discuss%20potential%20collaboration.%0D%0A%0D%0ABest%20regards,%0D%0A{{ researcher.name }}%0D%0A{{ researcher.email }}" 
            class="email-btn">
             📧 Send Email
         </a>
