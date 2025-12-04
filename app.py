@@ -249,5 +249,66 @@ def admin_load_data():
         </html>
         """, 500
 
+@app.route('/admin/force-reload')
+def admin_force_reload():
+    """
+    Force clear database and reload data from Excel files.
+    URL: https://academiamatch.onrender.com/admin/force-reload
+    """
+    ensure_tables()
+    
+    try:
+        from load_data import load_all_data
+        
+        # Force clear all data
+        Researcher.query.delete()
+        db.session.commit()
+        
+        # Load fresh data
+        total = load_all_data()
+        
+        # Get final counts
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+        
+        return f"""
+        <html>
+        <head><title>Data Reloaded Successfully</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Database Cleared and Reloaded!</h1>
+            <p>Successfully cleared old data and loaded <strong>{total} researchers</strong> from Excel files.</p>
+            <h3>New Database Status:</h3>
+            <ul>
+                <li>Internal Researchers (Humber): <strong>{internal_count}</strong></li>
+                <li>External Researchers: <strong>{external_count}</strong></li>
+                <li>Total: <strong>{total}</strong></li>
+            </ul>
+            <p><a href="/" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Homepage</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Old data has been cleared. New data loaded with correct column mapping.
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        <html>
+        <head><title>Error Reloading Data</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to reload data from Excel files.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <h3>Full Traceback:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 11px;">{error_details}</pre>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
