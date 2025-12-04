@@ -234,10 +234,8 @@ def admin_force_reload():
     try:
         from load_data import load_all_data
         
-        # Force clear all data (delete in correct order due to foreign keys)
-        EmailLog.query.delete()  # Delete email logs first
-        Match.query.delete()     # Delete matches second
-        Researcher.query.delete() # Delete researchers last
+        # Force clear all data
+        Researcher.query.delete()
         db.session.commit()
         
         # Load fresh data
@@ -333,7 +331,7 @@ def admin_compute_matches():
     ensure_tables()
     
     try:
-        from load_data import compute_and_store_matches
+        from load_data import compute_and_store_matches_incremental
         
         # Check if we have researchers
         internal_count = Researcher.query.filter_by(researcher_type='internal').count()
@@ -356,30 +354,68 @@ def admin_compute_matches():
             </html>
             """
         
-        # Compute matches (this takes 5-10 minutes)
+        # Get current progress
+        current_matches = Match.query.count()
+        batch_number = (current_matches // 10) + 1
+        
+        # Compute next batch of matches (10 at a time)
         print(f"\n{'='*60}")
-        print(f"Starting match computation for {internal_count} researchers...")
-        print(f"This will take approximately 5-10 minutes.")
+        print(f"Starting incremental match computation - Batch {batch_number}")
+        print(f"This will process 10 researchers (takes ~2-3 minutes)")
         print(f"{'='*60}\n")
         
-        compute_and_store_matches()
+        result = compute_and_store_matches_incremental(batch_number=batch_number, batch_size=10)
         
-        # Get final counts
-        match_count = Match.query.count()
-        
-        print(f"\n{'='*60}")
-        print(f"✅ Match computation complete!")
-        print(f"Total matches stored: {match_count}")
-        print(f"{'='*60}\n")
-        
-        return f"""
-        <html>
-        <head><title>Step 2 Complete - All Done!</title></head>
-        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
-            <h1 style="color: #27ae60;">✅ Step 2: Matches Computed Successfully!</h1>
-            <p>Pre-computed <strong>{match_count} matches</strong> and stored in database.</p>
-            <h3>Final Summary:</h3>
-            <ul>
+        # Check if complete or more batches needed
+        if result['status'] == 'complete':
+            return f"""
+            <html>
+            <head><title>All Matches Computed!</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #27ae60;">✅ All Matches Computed!</h1>
+                <p>All <strong>{result['total_matches']}</strong> researchers have been matched!</p>
+                <h3>Summary:</h3>
+                <ul>
+                    <li>Total Internal Researchers: {result['total_researchers']}</li>
+                    <li>Total Matches Computed: {result['total_matches']}</li>
+                    <li>Remaining: {result['remaining']}</li>
+                </ul>
+                <p style="margin-top: 30px;">
+                    <a href="/match-list" style="background: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        📄 View Top 10 Matches
+                    </a>
+                </p>
+                <p style="margin-top: 20px;"><a href="/" style="color: #3498db;">← Back to Home</a></p>
+            </body>
+            </html>
+            """
+        else:
+            return f"""
+            <html>
+            <head>
+                <title>Batch {result['batch_number']} Complete</title>
+                <meta http-equiv="refresh" content="3;url=/admin/compute-matches">
+            </head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #3498db;">✅ Batch {result['batch_number']} Complete!</h1>
+                <p>Processed <strong>{result['processed_this_batch']}</strong> researchers in this batch.</p>
+                <h3>Progress:</h3>
+                <div style="background: #ecf0f1; border-radius: 10px; padding: 3px; margin: 20px 0;">
+                    <div style="background: #3498db; width: {(result['total_matches']/result['total_researchers'])*100}%; height: 30px; border-radius: 8px; text-align: center; line-height: 30px; color: white; font-weight: bold;">
+                        {result['total_matches']}/{result['total_researchers']} ({int((result['total_matches']/result['total_researchers'])*100)}%)
+                    </div>
+                </div>
+                <ul>
+                    <li>Total Matches: {result['total_matches']}/{result['total_researchers']}</li>
+                    <li>Remaining: {result['remaining']}</li>
+                    <li>Next Batch: {result['next_batch']}</li>
+                </ul>
+                <h2 style="color: #f39c12;">⏳ Auto-starting Batch {result['next_batch']} in 3 seconds...</h2>
+                <p>If not redirected, <a href="/admin/compute-matches" style="color: #3498db; font-weight: bold;">click here</a> to continue.</p>
+                <p style="color: #7f8c8d; font-size: 14px; margin-top: 30px;">⚠️ Keep this tab open until all batches complete!</p>
+            </body>
+            </html>
+            """
                 <li>Internal Researchers: <strong>{internal_count}</strong></li>
                 <li>External Researchers: <strong>{external_count}</strong></li>
                 <li>Matches Stored: <strong>{match_count}</strong></li>
@@ -428,8 +464,8 @@ def match_list():
     ensure_tables()
     
     try:
-        # Get all pre-computed matches from database (sorted by similarity)
-        matches = Match.query.order_by(Match.similarity_percentage.desc()).all()
+        # Get top 10 highest-scoring matches from database
+        matches = Match.query.order_by(Match.similarity_percentage.desc()).limit(10).all()
         
         # Get email logs for status
         email_logs = EmailLog.query.all()
