@@ -90,6 +90,25 @@
             background: #f0f0f0;
         }
         
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: opacity 0.3s;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            opacity: 0.8;
+        }
+        
         .main-content {
             padding: 2rem 0;
         }
@@ -169,9 +188,14 @@
                     <a href="/" class="logo">AcademiaMatch</a>
                     <div class="subtitle">Humber Polytechnic Research Matching</div>
                 </div>
-                {% if request.path != '/' %}
-                <a href="/" class="btn btn-secondary">Home</a>
-                {% endif %}
+                <div class="nav-links">
+                    {% if request.path == '/' %}
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#how-it-works" class="nav-link">How it Works</a>
+                    {% else %}
+                    <a href="/" class="btn btn-secondary">Home</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </header>

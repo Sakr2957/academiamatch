@@ -86,6 +86,63 @@
         margin-bottom: 0;
     }
     
+    .features-section {
+        margin: 4rem 0;
+        scroll-margin-top: 80px;
+    }
+    
+    .features-section h2 {
+        text-align: center;
+        color: #003C71;
+        margin-bottom: 3rem;
+        font-size: 2rem;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    
+    .feature-card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #E8EFF5, #D4E2F0);
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        margin: 0 auto 1.5rem;
+    }
+    
+    .feature-card h3 {
+        color: #003C71;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card p {
+        color: #666;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
     .register-section {
         margin: 3rem 0;
         text-align: center;
@@ -105,6 +162,7 @@
     
     .how-it-works {
         margin: 4rem 0;
+        scroll-margin-top: 80px;
     }
     
     .how-it-works h2 {
@@ -149,6 +207,30 @@
 </style>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+// Smooth scroll for navigation links
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="hero">
     <div class="badge">AI-Powered Research Collaboration</div>
@@ -178,6 +260,27 @@
     </form>
 </div>
 
+<div id="features" class="features-section">
+    <h2>Features</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Match in minutes</h3>
+            <p>Our algorithm matches you with the right collaborators based on expertise, interests, and research compatibility.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3>Connect across all levels</h3>
+            <p>Build a diverse network of researchers at every academic level.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h3>Collaborate seamlessly</h3>
+            <p>Built-in secure communication tools and networking features to facilitate partnerships.</p>
+        </div>
+    </div>
+</div>
+
 <div class="register-section">
     <h2>New Researcher? Register Now</h2>
     <div class="register-buttons">
@@ -192,7 +295,7 @@
     <a href="/match-list" class="btn btn-primary">📊 View All Matches</a>
 </div>
 
-<div class="how-it-works">
+<div id="how-it-works" class="how-it-works">
     <h2>How It Works</h2>
     <div class="steps">
         <div class="step">
@@ -202,7 +305,7 @@
         </div>
         <div class="step">
             <div class="step-number">2</div>
-            <h3>AI Matching</h3>
+            <h3>Matching</h3>
             <p>Our algorithm analyzes research interests using semantic similarity</p>
         </div>
         <div class="step">
