@@ -246,32 +246,25 @@ def admin_force_reload():
         # Get final counts
         internal_count = Researcher.query.filter_by(researcher_type='internal').count()
         external_count = Researcher.query.filter_by(researcher_type='external').count()
-        match_count = Match.query.count()
         
         return f"""
         <html>
-        <head><title>Data Reloaded Successfully</title></head>
+        <head>
+            <title>Step 1 Complete - Data Loaded</title>
+            <meta http-equiv="refresh" content="0;url=/admin/compute-matches">
+        </head>
         <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
-            <h1 style="color: #27ae60;">✅ Database Reloaded Successfully!</h1>
-            <p>Successfully cleared old data, loaded <strong>{total} researchers</strong>, and pre-computed <strong>{match_count} matches</strong>!</p>
+            <h1 style="color: #27ae60;">✅ Step 1: Data Loaded Successfully!</h1>
+            <p>Successfully loaded <strong>{total} researchers</strong> from Excel files.</p>
             <h3>Database Status:</h3>
             <ul>
                 <li>Internal Researchers (Humber): <strong>{internal_count}</strong></li>
                 <li>External Researchers: <strong>{external_count}</strong></li>
-                <li>Pre-computed Matches: <strong>{match_count}</strong></li>
             </ul>
-            <h3 style="color: #27ae60;">✅ All Done!</h3>
-            <p>Everything is ready. You can now view matches or search for researchers.</p>
-            <p>
-                <a href="/match-list" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">📊 View All Matches</a>
-                <a href="/" style="display: inline-block; background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Go to Homepage</a>
-            </p>
             <hr>
-            <p style="font-size: 12px; color: #666;">
-                ✅ Data loaded from Excel files<br>
-                ✅ Matches pre-computed and cached<br>
-                ✅ Ready for use!
-            </p>
+            <h2 style="color: #f39c12;">⏳ Step 2: Computing Matches...</h2>
+            <p>Redirecting to match computation (takes 5-10 minutes)...</p>
+            <p>If not redirected automatically, <a href="/admin/compute-matches" style="color: #3498db; font-weight: bold;">click here</a>.</p>
         </body>
         </html>
         """
@@ -363,28 +356,46 @@ def admin_compute_matches():
             </html>
             """
         
-        # Compute matches
+        # Compute matches (this takes 5-10 minutes)
+        print(f"\n{'='*60}")
+        print(f"Starting match computation for {internal_count} researchers...")
+        print(f"This will take approximately 5-10 minutes.")
+        print(f"{'='*60}\n")
+        
         compute_and_store_matches()
         
         # Get final counts
         match_count = Match.query.count()
         
+        print(f"\n{'='*60}")
+        print(f"✅ Match computation complete!")
+        print(f"Total matches stored: {match_count}")
+        print(f"{'='*60}\n")
+        
         return f"""
         <html>
-        <head><title>Matches Computed Successfully</title></head>
+        <head><title>Step 2 Complete - All Done!</title></head>
         <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
-            <h1 style="color: #27ae60;">✅ Matches Computed Successfully!</h1>
+            <h1 style="color: #27ae60;">✅ Step 2: Matches Computed Successfully!</h1>
             <p>Pre-computed <strong>{match_count} matches</strong> and stored in database.</p>
-            <h3>Summary:</h3>
+            <h3>Final Summary:</h3>
             <ul>
                 <li>Internal Researchers: <strong>{internal_count}</strong></li>
                 <li>External Researchers: <strong>{external_count}</strong></li>
                 <li>Matches Stored: <strong>{match_count}</strong></li>
             </ul>
-            <p><a href="/match-list" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View All Matches</a></p>
+            <hr>
+            <h2 style="color: #27ae60;">✅ All Done!</h2>
+            <p>Everything is ready. Matches are cached for instant access.</p>
+            <p>
+                <a href="/match-list" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">📊 View All Matches</a>
+                <a href="/" style="display: inline-block; background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Go to Homepage</a>
+            </p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-                Matches are now cached in database. Match list page will load instantly!
+                ✅ Data loaded from Excel files<br>
+                ✅ Matches pre-computed and cached<br>
+                ✅ Ready for use!
             </p>
         </body>
         </html>

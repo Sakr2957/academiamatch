@@ -31,7 +31,10 @@ def preprocess_text(text: str) -> str:
     return text
 
 def compute_and_store_matches():
-    """Pre-compute matches for all internal researchers and store in database"""
+    """Pre-compute matches for all internal researchers and store in database
+    Optimized for 4GB RAM with batch processing and memory management.
+    """
+    import gc
     from matching import find_matches
     
     # Clear existing matches
@@ -41,44 +44,64 @@ def compute_and_store_matches():
     
     # Get all internal researchers
     internal_researchers = Researcher.query.filter_by(researcher_type='internal').all()
-    print(f"Computing matches for {len(internal_researchers)} internal researchers...\n")
+    total_researchers = len(internal_researchers)
+    print(f"Computing matches for {total_researchers} internal researchers...\n")
+    print("Processing in batches of 5 to optimize memory usage...\n")
     
     matches_stored = 0
+    errors = 0
     
-    for idx, internal in enumerate(internal_researchers, 1):
-        print(f"  [{idx}/{len(internal_researchers)}] Processing {internal.name}...")
+    # Process in smaller batches of 5 to reduce memory pressure
+    batch_size = 5
+    
+    for batch_start in range(0, total_researchers, batch_size):
+        batch_end = min(batch_start + batch_size, total_researchers)
+        batch = internal_researchers[batch_start:batch_end]
         
-        try:
-            # Find top 1 match for this researcher
-            matches = find_matches(internal, top_n=1)
-            
-            for rank, match_data in enumerate(matches, 1):
-                # Get external researcher by email
-                external = Researcher.query.filter_by(email=match_data['email']).first()
+        print(f"\n--- Batch {batch_start//batch_size + 1} ({batch_start+1}-{batch_end} of {total_researchers}) ---")
+        
+        for idx, internal in enumerate(batch, start=batch_start+1):
+            try:
+                print(f"  [{idx}/{total_researchers}] {internal.name}...", end=" ")
                 
-                if external:
-                    # Store match in database
-                    match = Match(
-                        internal_researcher_id=internal.id,
-                        external_researcher_id=external.id,
-                        similarity_percentage=match_data['similarity_percentage'],
-                        match_rank=rank
-                    )
-                    db.session.add(match)
-                    matches_stored += 1
+                # Find top 1 match for this researcher
+                matches = find_matches(internal, top_n=1)
+                
+                for rank, match_data in enumerate(matches, 1):
+                    # Get external researcher by email
+                    external = Researcher.query.filter_by(email=match_data['email']).first()
+                    
+                    if external:
+                        # Store match in database
+                        match = Match(
+                            internal_researcher_id=internal.id,
+                            external_researcher_id=external.id,
+                            similarity_percentage=match_data['similarity_percentage'],
+                            match_rank=rank
+                        )
+                        db.session.add(match)
+                        matches_stored += 1
+                        print(f"✓ {match_data['similarity_percentage']:.1f}%")
+                    else:
+                        print("✗ No match found")
             
-            # Commit every 10 researchers to avoid memory buildup
-            if idx % 10 == 0:
-                db.session.commit()
-                print(f"    ✓ Committed {matches_stored} matches so far...")
+            except Exception as e:
+                print(f"✗ Error: {str(e)[:50]}")
+                errors += 1
+                continue
         
-        except Exception as e:
-            print(f"    ✗ Error: {str(e)}")
-            continue
+        # Commit after each batch and force garbage collection
+        db.session.commit()
+        gc.collect()  # Free up memory
+        print(f"  ✓ Batch committed ({matches_stored} matches total, {errors} errors)")
     
-    # Final commit
-    db.session.commit()
-    print(f"\n✓ Stored {matches_stored} pre-computed matches in database\n")
+    # Final summary
+    print(f"\n{'='*60}")
+    print(f"✅ Matching Complete!")
+    print(f"  Total processed: {total_researchers}")
+    print(f"  Matches stored: {matches_stored}")
+    print(f"  Errors: {errors}")
+    print(f"{'='*60}\n")
 
 def load_all_data():
     """Load all Excel files into the database"""
@@ -222,27 +245,13 @@ def load_all_data():
             print(f"✗ Error loading external researchers: {str(e)}\n")
             db.session.rollback()
         
-        # Pre-compute matches automatically
-        print("="*60)
-        print("Pre-computing matches...")
-        print("="*60 + "\n")
-        
-        try:
-            compute_and_store_matches()
-            print("\n" + "="*60)
-            print("✅ Matches computed and stored successfully!")
-            print("="*60 + "\n")
-        except Exception as e:
-            print(f"\n⚠️ Warning: Could not compute matches: {str(e)}")
-            print("Matches can be computed later via /admin/compute-matches\n")
-        
         # Summary
         print("="*60)
         print(f"Data Loading Complete!")
         print(f"Total researchers loaded: {total_loaded}")
         print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
         print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
-        print(f"Matches: {Match.query.count()}")
+        print("\n⚠️  Next: Visit /admin/compute-matches to pre-compute matches")
         print("="*60)
         
         return total_loaded
