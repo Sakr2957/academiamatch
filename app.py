@@ -4,7 +4,15 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///academiamatch.db'
+
+# Use PostgreSQL (Supabase) if DATABASE_URL is set, otherwise fallback to SQLite
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///academiamatch.db')
+
+# Fix for SQLAlchemy 1.4+ (Render/Heroku use 'postgres://' but SQLAlchemy needs 'postgresql://')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
@@ -33,17 +41,37 @@ class Researcher(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+# Helper function to ensure tables exist (called on first request)
+_tables_created = False
+def ensure_tables():
+    global _tables_created
+    if not _tables_created:
+        try:
+            with app.app_context():
+                db.create_all()
+            _tables_created = True
+        except Exception as e:
+            print(f"Warning: Could not create tables: {e}")
+            # Don't crash, just log the error
+
 # Routes
 @app.route('/')
 def index():
-    internal_count = Researcher.query.filter_by(researcher_type='internal').count()
-    external_count = Researcher.query.filter_by(researcher_type='external').count()
+    ensure_tables()  # Create tables on first request if needed
+    try:
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+    except:
+        # If database not accessible, show 0
+        internal_count = 0
+        external_count = 0
     return render_template('index.html', 
                          internal_count=internal_count, 
                          external_count=external_count)
 
 @app.route('/register/external', methods=['GET', 'POST'])
 def register_external():
+    ensure_tables()
     if request.method == 'POST':
         try:
             researcher = Researcher(
@@ -65,6 +93,7 @@ def register_external():
 
 @app.route('/register/internal', methods=['GET', 'POST'])
 def register_internal():
+    ensure_tables()
     if request.method == 'POST':
         try:
             researcher = Researcher(
@@ -118,15 +147,107 @@ def matches(email):
 
 @app.route('/api/counts')
 def api_counts():
-    internal_count = Researcher.query.filter_by(researcher_type='internal').count()
-    external_count = Researcher.query.filter_by(researcher_type='external').count()
+    ensure_tables()
+    try:
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+    except:
+        internal_count = 0
+        external_count = 0
     return jsonify({
         'internal': internal_count,
         'external': external_count,
         'total': internal_count + external_count
     })
 
+# Admin route to load initial data from Excel files
+@app.route('/admin/load-data')
+def admin_load_data():
+    """
+    Load data from Excel files into the database.
+    Visit this URL once after deployment to populate the database.
+    URL: https://academiamatch.onrender.com/admin/load-data
+    """
+    # Ensure tables exist before loading data
+    ensure_tables()
+    
+    try:
+        from load_data import load_all_data
+        
+        # Check if data already loaded
+        existing_count = Researcher.query.count()
+        if existing_count > 0:
+            return f"""
+            <html>
+            <head><title>Data Already Loaded</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #f39c12;">⚠️ Data Already Exists</h1>
+                <p>The database already contains <strong>{existing_count} researchers</strong>.</p>
+                <p>Loading data again might create duplicates.</p>
+                <h3>Current Database Status:</h3>
+                <ul>
+                    <li>Internal Researchers: {Researcher.query.filter_by(researcher_type='internal').count()}</li>
+                    <li>External Researchers: {Researcher.query.filter_by(researcher_type='external').count()}</li>
+                    <li>Total: {existing_count}</li>
+                </ul>
+                <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+                <hr>
+                <p style="font-size: 12px; color: #666;">
+                    If you want to reload data, delete the database first or clear all researchers.
+                </p>
+            </body>
+            </html>
+            """
+        
+        # Load data
+        total = load_all_data()
+        
+        # Get final counts
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+        
+        return f"""
+        <html>
+        <head><title>Data Loading Complete</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Success!</h1>
+            <p>Successfully loaded <strong>{total} researchers</strong> into the Supabase database.</p>
+            <h3>Loading Summary:</h3>
+            <ul>
+                <li>Internal Researchers (Humber): <strong>{internal_count}</strong></li>
+                <li>External Researchers: <strong>{external_count}</strong></li>
+                <li>Total: <strong>{total}</strong></li>
+            </ul>
+            <p><a href="/" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Homepage</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Data loaded from Excel files into PostgreSQL (Supabase). Your data is now persistent!
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        <html>
+        <head><title>Error Loading Data</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to load data from Excel files.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <h3>Full Traceback:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 11px;">{error_details}</pre>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Make sure the Excel files are in the root directory of your repository.
+            </p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
