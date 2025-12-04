@@ -146,15 +146,14 @@ def load_all_data():
             
             for _, row in df_internal.iterrows():
                 researcher = Researcher(
-                    name=str(row.get('Name', '')),
-                    email=str(row.get('Email', '')).lower().strip(),
+                    name=str(row.get('Your Name', '')),
+                    email=str(row.get('Email Address', '')).lower().strip(),
                     researcher_type='internal',
                     organization='Humber Polytechnic',
-                    department=clean_text(row.get('Department', '')),
-                    research_interests=clean_text(row.get('Research Interests', '')),
-                    expertise=clean_text(row.get('Expertise', '')),
-                    current_projects=clean_text(row.get('Current Projects', '')),
-                    collaboration_goals=clean_text(row.get('Collaboration Goals', ''))
+                    faculty_department=clean_text(row.get('Your Faculty/Department', '')),
+                    primary_areas=clean_text(row.get('What are your primary areas of research or expertise?Please list key words or phrases (e.g., machine learning, food security, sustainable packaging, behavioral economics).', '')),
+                    experience_summary=clean_text(row.get('Please provide a brief summary of your experience or capabilities relevant to collaborative research?(e.g., summary of technical skills, related past work, specialized expertise)', '')),
+                    sectors_interested=clean_text(row.get('What sectors or societal challenges are you most interested in addressing through research?(e.g., healthcare innovation, climate resilience, advanced manufacturing, education equity)', ''))
                 )
                 db.session.add(researcher)
                 total_loaded += 1
@@ -176,14 +175,14 @@ def load_all_data():
             
             for _, row in df_external.iterrows():
                 researcher = Researcher(
-                    name=str(row.get('Name', '')),
-                    email=str(row.get('Email', '')).lower().strip(),
+                    name=str(row.get('Your Name', '')),
+                    email=str(row.get('Email Address', '')).lower().strip(),
                     researcher_type='external',
-                    organization=clean_text(row.get('Organization', '')),
-                    research_focus=clean_text(row.get('Research Focus', '')),
-                    industry_sector=clean_text(row.get('Industry Sector', '')),
-                    partnership_interests=clean_text(row.get('Partnership Interests', '')),
-                    available_resources=clean_text(row.get('Available Resources', ''))
+                    organization=clean_text(row.get('Your Orgnization', '')),
+                    organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
+                    challenge_description=clean_text(row.get('Please describe a challenge or business goal your organization is currently facing that could benefit from academic collaboration.\n(e.g., improving supply chain efficiency, developing sustainable mate', '')),
+                    expertise_sought=clean_text(row.get('What type of expertise or research support are you seeking to address this challenge?(e.g., machine learning, food security, sustainable packaging, behavioral economics)', '')),
+                    lab_tours_interested=clean_text(row.get('Which lab tour(s) would you be interested in joining during our event? (Tour selection will be finalized at the event. As tour lengths will vary, it is anticipated that participants will have time to ', ''))
                 )
                 db.session.add(researcher)
                 total_loaded += 1
