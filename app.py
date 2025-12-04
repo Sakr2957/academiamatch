@@ -234,10 +234,9 @@ def admin_force_reload():
     try:
         from load_data import load_all_data
         
-        # Force clear all data (correct order for FK constraints)
-        EmailLog.query.delete()  # Delete EmailLog first (references Researcher)
-        Match.query.delete()     # Delete Match second (references Researcher)
-        Researcher.query.delete() # Delete Researcher last (base table)
+        # Force clear all data using TRUNCATE CASCADE (nuclear option)
+        # This bypasses foreign key checks and forcefully empties all tables
+        db.session.execute(db.text('TRUNCATE TABLE email_log, match, researcher RESTART IDENTITY CASCADE'))
         db.session.commit()
         
         # Load fresh data
