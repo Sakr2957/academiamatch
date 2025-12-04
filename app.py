@@ -234,8 +234,10 @@ def admin_force_reload():
     try:
         from load_data import load_all_data
         
-        # Force clear all data
-        Researcher.query.delete()
+        # Force clear all data (delete in correct order due to foreign keys)
+        EmailLog.query.delete()  # Delete email logs first
+        Match.query.delete()     # Delete matches second
+        Researcher.query.delete() # Delete researchers last
         db.session.commit()
         
         # Load fresh data
