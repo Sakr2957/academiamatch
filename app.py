@@ -257,10 +257,14 @@ def admin_force_reload():
                 <li>External Researchers: <strong>{external_count}</strong></li>
                 <li>Total: <strong>{total}</strong></li>
             </ul>
-            <p><a href="/" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Homepage</a></p>
+            <h3 style="color: #f39c12;">⚠️ NEXT STEP: Compute Matches</h3>
+            <p>Data loaded successfully! Now you need to compute matches.</p>
+            <p><a href="/admin/compute-matches" style="display: inline-block; background: #27ae60; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">➡️ Compute Matches Now</a></p>
+            <p style="margin-top: 1rem;"><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-                Old data has been cleared. New data loaded with correct column mapping.
+                Step 1: Load Data ✅ Complete<br>
+                Step 2: Compute Matches ⏳ Click the button above (takes 5-10 minutes)
             </p>
         </body>
         </html>
@@ -319,6 +323,84 @@ def track_email():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/compute-matches')
+def admin_compute_matches():
+    """
+    Compute and store matches for all internal researchers.
+    This should be run AFTER /admin/force-reload to populate the Match table.
+    URL: https://academiamatch.onrender.com/admin/compute-matches
+    """
+    ensure_tables()
+    
+    try:
+        from load_data import compute_and_store_matches
+        
+        # Check if we have researchers
+        internal_count = Researcher.query.filter_by(researcher_type='internal').count()
+        external_count = Researcher.query.filter_by(researcher_type='external').count()
+        
+        if internal_count == 0 or external_count == 0:
+            return f"""
+            <html>
+            <head><title>No Data Found</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #f39c12;">⚠️ No Researchers Found</h1>
+                <p>Please load data first by visiting <a href="/admin/force-reload">/admin/force-reload</a></p>
+                <p>Current database status:</p>
+                <ul>
+                    <li>Internal Researchers: {internal_count}</li>
+                    <li>External Researchers: {external_count}</li>
+                </ul>
+                <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+            </body>
+            </html>
+            """
+        
+        # Compute matches
+        compute_and_store_matches()
+        
+        # Get final counts
+        match_count = Match.query.count()
+        
+        return f"""
+        <html>
+        <head><title>Matches Computed Successfully</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Matches Computed Successfully!</h1>
+            <p>Pre-computed <strong>{match_count} matches</strong> and stored in database.</p>
+            <h3>Summary:</h3>
+            <ul>
+                <li>Internal Researchers: <strong>{internal_count}</strong></li>
+                <li>External Researchers: <strong>{external_count}</strong></li>
+                <li>Matches Stored: <strong>{match_count}</strong></li>
+            </ul>
+            <p><a href="/match-list" style="display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View All Matches</a></p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                Matches are now cached in database. Match list page will load instantly!
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        <html>
+        <head><title>Error Computing Matches</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to compute matches.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <h3>Full Traceback:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 11px;">{error_details}</pre>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
 
 @app.route('/match-list')
 def match_list():

@@ -222,17 +222,6 @@ def load_all_data():
             print(f"✗ Error loading external researchers: {str(e)}\n")
             db.session.rollback()
         
-        # Pre-compute matches
-        print("="*60)
-        print("Pre-computing matches...")
-        print("="*60 + "\n")
-        
-        try:
-            compute_and_store_matches()
-        except Exception as e:
-            print(f"✗ Error computing matches: {str(e)}")
-            print("Matches will be computed on-demand instead.\n")
-        
         # Summary
         print("="*60)
         print(f"Data Loading Complete!")
