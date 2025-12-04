@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -595,12 +595,50 @@ def admin_compute_matches():
         </html>
         """, 500
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """
+    Admin login page for accessing match-list.
+    Authorized emails: ahmed.sakr@humber.ca, Stefanie.Bernaudo@humber.ca, Rita.Liu@humber.ca
+    Password: Enzo@1939
+    """
+    AUTHORIZED_EMAILS = [
+        'ahmed.sakr@humber.ca',
+        'stefanie.bernaudo@humber.ca',
+        'rita.liu@humber.ca'
+    ]
+    ADMIN_PASSWORD = 'Enzo@1939'
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        
+        if email in AUTHORIZED_EMAILS and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            session['admin_email'] = email
+            return redirect('/match-list')
+        else:
+            return render_template('admin_login.html', error='Invalid email or password')
+    
+    return render_template('admin_login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Logout admin user"""
+    session.pop('admin_logged_in', None)
+    session.pop('admin_email', None)
+    return redirect('/')
+
 @app.route('/match-list')
 def match_list():
     """
     Show all pre-computed matches between internal and external researchers with email status.
     This reads from the Match table (no AI computation needed - super fast!).
     """
+    # Check if user is logged in as admin
+    if not session.get('admin_logged_in'):
+        return redirect('/admin/login')
+    
     ensure_tables()
     
     try:
