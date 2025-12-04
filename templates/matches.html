@@ -167,8 +167,9 @@
         </div>
         {% endif %}
         
-        <a href="mailto:{{ match.email }}?subject=Research%20Collaboration%20Inquiry&body=Dear%20{{ match.name }},%0D%0A%0D%0AI%20am%20{{ researcher.name }}%20from%20{{ researcher.organization }}.%20I%20recently%20came%20across%20your%20research%20profile%20and%20am%20particularly%20interested%20in%20potential%20collaboration.%0D%0A%0D%0AOur%20research%20interests%20align%20with%20a%20match%20score%20of%20{{ match.similarity_percentage }}%25.%0D%0A%0D%0AI%20would%20be%20grateful%20for%20the%20opportunity%20to%20discuss%20potential%20collaboration.%0D%0A%0D%0ABest%20regards,%0D%0A{{ researcher.name }}%0D%0A{{ researcher.email }}" 
-           class="email-btn">
+        <a href="#" 
+           class="email-btn"
+           onclick="sendEmail('{{ researcher.email }}', '{{ match.email }}', '{{ researcher.name }}', '{{ match.name }}', '{{ researcher.organization }}', '{{ match.similarity_percentage }}', '{{ researcher.primary_areas or researcher.expertise_sought }}', '{{ match.primary_areas or match.expertise_sought }}'); return false;">
             📧 Send Email
         </a>
     </div>
@@ -183,4 +184,48 @@
 <div style="text-align: center; margin-top: 2rem;">
     <a href="/" class="btn btn-secondary">← Back to Home</a>
 </div>
+
+<script>
+function sendEmail(internalEmail, externalEmail, internalName, externalName, internalOrg, matchScore, internalInterests, externalInterests) {
+    // Create email subject
+    const subject = encodeURIComponent('Research Visit Inquiry - Collaboration Opportunity');
+    
+    // Create email body
+    const body = encodeURIComponent(
+        `Dear ${externalName},\n\n` +
+        `I am ${internalName}, a researcher at ${internalOrg}. I recently came across your work and am particularly interested in your research.\n\n` +
+        `My research interests include: ${internalInterests}\n\n` +
+        `I noticed your work in: ${externalInterests}\n\n` +
+        `Our research interests align with a match score of ${matchScore}%, which suggests strong potential for collaboration.\n\n` +
+        `I am writing to inquire about the possibility of a research visit to your laboratory. I believe my current research could complement your work, and I would be grateful for the opportunity to discuss potential collaboration possibilities.\n\n` +
+        `Would you be open to discussing this further? Please let me know if you require any additional information about my research background.\n\n` +
+        `Thank you for considering my request.\n\n` +
+        `Sincerely,\n` +
+        `${internalName}\n` +
+        `${internalOrg}\n` +
+        `${internalEmail}`
+    );
+    
+    // Track email
+    fetch('/api/track-email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            internal_email: internalEmail,
+            external_email: externalEmail
+        })
+    }).then(response => {
+        if (response.ok) {
+            console.log('Email tracked successfully');
+        }
+    }).catch(error => {
+        console.error('Error tracking email:', error);
+    });
+    
+    // Open email client
+    window.location.href = `mailto:${externalEmail}?subject=${subject}&body=${body}`;
+}
+</script>
 {% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}All Matches - AcademiaMatch{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #003C71, #005a9c);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .stats {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+    
+    .stat-box {
+        background: rgba(255,255,255,0.1);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .match-table {
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .match-table th {
+        background: #003C71;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+    
+    .match-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .match-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .score-badge {
+        background: #F7B500;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+    }
+    
+    .email-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .email-sent {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .email-not-sent {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .researcher-name {
+        font-weight: 600;
+        color: #003C71;
+    }
+    
+    .organization {
+        color: #666;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📊 All Research Matches</h1>
+    <p>Complete list of matches between Humber internal researchers and external organizations</p>
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number">{{ matches|length }}</div>
+            <div>Total Matches</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ matches|selectattr('email_sent')|list|length }}</div>
+            <div>Emails Sent</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ matches|rejectattr('email_sent')|list|length }}</div>
+            <div>Pending</div>
+        </div>
+    </div>
+</div>
+
+{% if matches %}
+<div style="overflow-x: auto;">
+    <table class="match-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Internal Researcher (Humber)</th>
+                <th>External Researcher</th>
+                <th>Match Score</th>
+                <th>Email Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matches %}
+            <tr>
+                <td>{{ match.match_rank }}</td>
+                <td>
+                    <div class="researcher-name">{{ match.internal_name }}</div>
+                    <div class="organization">{{ match.faculty_department }}</div>
+                </td>
+                <td>
+                    <div class="researcher-name">{{ match.external_name }}</div>
+                    <div class="organization">{{ match.organization }}</div>
+                </td>
+                <td>
+                    <span class="score-badge">{{ match.similarity_percentage }}%</span>
+                </td>
+                <td>
+                    {% if match.email_sent %}
+                    <span class="email-status email-sent">
+                        ✅ Sent
+                        {% if match.email_sent_at %}
+                        <br><small>{{ match.email_sent_at.strftime('%Y-%m-%d') }}</small>
+                        {% endif %}
+                    </span>
+                    {% else %}
+                    <span class="email-status email-not-sent">
+                        ❌ Not Sent
+                    </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div style="text-align: center; padding: 3rem; background: white; border-radius: 12px;">
+    <h3>No matches found</h3>
+    <p>Please load data first by visiting <a href="/admin/load-data">/admin/load-data</a></p>
+</div>
+{% endif %}
+
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="/" class="btn btn-secondary">← Back to Home</a>
+</div>
+{% endblock %}

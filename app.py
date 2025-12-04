@@ -41,6 +41,16 @@ class Researcher(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class EmailLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    internal_researcher_id = db.Column(db.Integer, db.ForeignKey('researcher.id'), nullable=False)
+    external_researcher_id = db.Column(db.Integer, db.ForeignKey('researcher.id'), nullable=False)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    internal_researcher = db.relationship('Researcher', foreign_keys=[internal_researcher_id])
+    external_researcher = db.relationship('Researcher', foreign_keys=[external_researcher_id])
+
 # Helper function to ensure tables exist (called on first request)
 _tables_created = False
 def ensure_tables():
@@ -309,6 +319,80 @@ def admin_force_reload():
         </body>
         </html>
         """, 500
+
+@app.route('/api/track-email', methods=['POST'])
+def track_email():
+    """
+    Track when an email is sent from internal to external researcher.
+    """
+    try:
+        data = request.get_json()
+        internal_email = data.get('internal_email')
+        external_email = data.get('external_email')
+        
+        # Get researcher IDs
+        internal = Researcher.query.filter_by(email=internal_email).first()
+        external = Researcher.query.filter_by(email=external_email).first()
+        
+        if not internal or not external:
+            return jsonify({'error': 'Researcher not found'}), 404
+        
+        # Check if already logged
+        existing = EmailLog.query.filter_by(
+            internal_researcher_id=internal.id,
+            external_researcher_id=external.id
+        ).first()
+        
+        if not existing:
+            # Create new log entry
+            log = EmailLog(
+                internal_researcher_id=internal.id,
+                external_researcher_id=external.id
+            )
+            db.session.add(log)
+            db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/match-list')
+def match_list():
+    """
+    Show all matches between internal and external researchers with email status.
+    """
+    ensure_tables()
+    
+    try:
+        from get_all_matches import get_all_matches
+        
+        # Get all matches
+        all_matches = get_all_matches(top_n=3)
+        
+        # Get email logs
+        email_logs = EmailLog.query.all()
+        email_status = {}
+        for log in email_logs:
+            key = f"{log.internal_researcher_id}_{log.external_researcher_id}"
+            email_status[key] = log.sent_at
+        
+        # Add email status to matches
+        for match in all_matches:
+            internal = Researcher.query.filter_by(email=match['internal_email']).first()
+            external = Researcher.query.filter_by(email=match['external_email']).first()
+            
+            if internal and external:
+                key = f"{internal.id}_{external.id}"
+                match['email_sent'] = key in email_status
+                match['email_sent_at'] = email_status.get(key)
+            else:
+                match['email_sent'] = False
+                match['email_sent_at'] = None
+        
+        return render_template('match_list.html', matches=all_matches)
+    
+    except Exception as e:
+        return f"Error loading matches: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)

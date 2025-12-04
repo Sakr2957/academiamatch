@@ -169,7 +169,9 @@
                     <a href="/" class="logo">AcademiaMatch</a>
                     <div class="subtitle">Humber Polytechnic Research Matching</div>
                 </div>
+                {% if request.path != '/' %}
                 <a href="/" class="btn btn-secondary">Home</a>
+                {% endif %}
             </div>
         </div>
     </header>
