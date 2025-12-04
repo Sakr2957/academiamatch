@@ -142,10 +142,24 @@ def load_all_data():
         
         df_internal = pd.read_excel('HumberInternalResearch.xlsx')
         
+        # Track emails to skip duplicates within the Excel file
+        seen_emails = set()
+        skipped = 0
+        
         for _, row in df_internal.iterrows():
+            email = str(row.get('Email Address', '')).lower().strip()
+            
+            # Skip if we've already seen this email
+            if email in seen_emails:
+                print(f"  ⏭️  Skipping duplicate email: {email}")
+                skipped += 1
+                continue
+            
+            seen_emails.add(email)
+            
             researcher = Researcher(
                 name=str(row.get('Your Name', '')),
-                email=str(row.get('Email Address', '')).lower().strip(),
+                email=email,
                 researcher_type='internal',
                 organization='Humber Polytechnic',
                 faculty_department=clean_text(row.get('Your Faculty/Department', '')),
@@ -157,7 +171,7 @@ def load_all_data():
             total_loaded += 1
         
         db.session.commit()
-        print(f"✓ Loaded {len(df_internal)} internal researchers\n")
+        print(f"✓ Loaded {len(df_internal) - skipped} internal researchers ({skipped} duplicates skipped)\n")
         
     except Exception as e:
         print(f"✗ Error loading internal researchers: {str(e)}\n")
@@ -171,10 +185,24 @@ def load_all_data():
         
         df_external = pd.read_excel('ExternalResearch.xlsx')
         
+        # Track emails to skip duplicates within the Excel file
+        seen_emails_ext = set()
+        skipped_ext = 0
+        
         for _, row in df_external.iterrows():
+            email = str(row.get('Email Address', '')).lower().strip()
+            
+            # Skip if we've already seen this email
+            if email in seen_emails_ext:
+                print(f"  ⏭️  Skipping duplicate email: {email}")
+                skipped_ext += 1
+                continue
+            
+            seen_emails_ext.add(email)
+            
             researcher = Researcher(
                 name=str(row.get('Your Name', '')),
-                email=str(row.get('Email Address', '')).lower().strip(),
+                email=email,
                 researcher_type='external',
                 organization=clean_text(row.get('Your Orgnization', '')),
                 organization_focus=clean_text(row.get('What is your organization\'s primary area of focus or industry sector?Please list key words or phrases (e.g., renewable energy, healthcare, logistics, education technology)', '')),
@@ -186,7 +214,7 @@ def load_all_data():
             total_loaded += 1
         
         db.session.commit()
-        print(f"✓ Loaded {len(df_external)} external researchers\n")
+        print(f"✓ Loaded {len(df_external) - skipped_ext} external researchers ({skipped_ext} duplicates skipped)\n")
         
     except Exception as e:
         print(f"✗ Error loading external researchers: {str(e)}\n")
