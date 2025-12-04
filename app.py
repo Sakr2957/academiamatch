@@ -113,7 +113,7 @@ def matches(email):
         return render_template('not_found.html', email=email)
     
     # Find matches
-    matches_data = find_matches(researcher, top_n=5)
+    matches_data = find_matches(researcher, top_n=3)
     
     return render_template('matches.html', 
                          researcher=researcher, 
