@@ -7,7 +7,7 @@ This script loads data from 2 Excel files:
 
 import pandas as pd
 import re
-from app import app, db, Researcher, Match
+from app import app, db, Researcher, Match, EmailLog
 
 def clean_text(value):
     """Clean and normalize text values from Excel"""
@@ -90,9 +90,11 @@ def load_all_data():
     total_loaded = 0
     
     with app.app_context():
-        # Clear existing data
+        # Clear existing data (delete in correct order due to foreign keys)
         print("Clearing existing data...")
-        Researcher.query.delete()
+        EmailLog.query.delete()  # Delete email logs first
+        Match.query.delete()     # Delete matches second
+        Researcher.query.delete() # Delete researchers last
         db.session.commit()
         print("✓ Database cleared\n")
         
