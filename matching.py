@@ -17,7 +17,8 @@ def get_model():
     global _model
     if _model is None:
         print("Loading Sentence Transformer model (all-MiniLM-L6-v2)...")
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        # Use device='cpu' and optimize for memory
+        _model = SentenceTransformer("all-MiniLM-L6-v2", device='cpu')
         print("✓ Model loaded successfully")
     return _model
 
