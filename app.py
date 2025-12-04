@@ -41,6 +41,19 @@ class Researcher(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class Match(db.Model):
+    """Pre-computed matches between internal and external researchers"""
+    id = db.Column(db.Integer, primary_key=True)
+    internal_researcher_id = db.Column(db.Integer, db.ForeignKey('researcher.id'), nullable=False)
+    external_researcher_id = db.Column(db.Integer, db.ForeignKey('researcher.id'), nullable=False)
+    similarity_percentage = db.Column(db.Float, nullable=False)
+    match_rank = db.Column(db.Integer, nullable=False)  # 1 = best match
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    internal_researcher = db.relationship('Researcher', foreign_keys=[internal_researcher_id])
+    external_researcher = db.relationship('Researcher', foreign_keys=[external_researcher_id])
+
 class EmailLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     internal_researcher_id = db.Column(db.Integer, db.ForeignKey('researcher.id'), nullable=False)
@@ -359,40 +372,46 @@ def track_email():
 @app.route('/match-list')
 def match_list():
     """
-    Show all matches between internal and external researchers with email status.
+    Show all pre-computed matches between internal and external researchers with email status.
+    This reads from the Match table (no AI computation needed - super fast!).
     """
     ensure_tables()
     
     try:
-        from get_all_matches import get_all_matches
+        # Get all pre-computed matches from database (sorted by similarity)
+        matches = Match.query.order_by(Match.similarity_percentage.desc()).all()
         
-        # Get all matches (only best match per researcher to reduce memory usage)
-        all_matches = get_all_matches(top_n=1)
-        
-        # Get email logs
+        # Get email logs for status
         email_logs = EmailLog.query.all()
         email_status = {}
         for log in email_logs:
             key = f"{log.internal_researcher_id}_{log.external_researcher_id}"
             email_status[key] = log.sent_at
         
-        # Add email status to matches
-        for match in all_matches:
-            internal = Researcher.query.filter_by(email=match['internal_email']).first()
-            external = Researcher.query.filter_by(email=match['external_email']).first()
+        # Format matches for template
+        all_matches = []
+        for idx, match in enumerate(matches, 1):
+            key = f"{match.internal_researcher_id}_{match.external_researcher_id}"
             
-            if internal and external:
-                key = f"{internal.id}_{external.id}"
-                match['email_sent'] = key in email_status
-                match['email_sent_at'] = email_status.get(key)
-            else:
-                match['email_sent'] = False
-                match['email_sent_at'] = None
+            all_matches.append({
+                'match_rank': idx,
+                'internal_name': match.internal_researcher.name,
+                'internal_email': match.internal_researcher.email,
+                'faculty_department': match.internal_researcher.faculty_department or 'N/A',
+                'external_name': match.external_researcher.name,
+                'external_email': match.external_researcher.email,
+                'organization': match.external_researcher.organization,
+                'similarity_percentage': round(match.similarity_percentage, 1),
+                'email_sent': key in email_status,
+                'email_sent_at': email_status.get(key)
+            })
         
         return render_template('match_list.html', matches=all_matches)
     
     except Exception as e:
-        return f"Error loading matches: {str(e)}", 500
+        import traceback
+        error_details = traceback.format_exc()
+        return f"Error loading matches: {str(e)}<br><br><pre>{error_details}</pre>", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)

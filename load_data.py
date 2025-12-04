@@ -7,7 +7,7 @@ This script loads data from 2 Excel files:
 
 import pandas as pd
 import re
-from app import app, db, Researcher
+from app import app, db, Researcher, Match
 
 def clean_text(value):
     """Clean and normalize text values from Excel"""
@@ -29,6 +29,56 @@ def preprocess_text(text: str) -> str:
     # Remove extra spaces
     text = " ".join(text.split())
     return text
+
+def compute_and_store_matches():
+    """Pre-compute matches for all internal researchers and store in database"""
+    from matching import find_matches
+    
+    # Clear existing matches
+    Match.query.delete()
+    db.session.commit()
+    print("✓ Cleared old matches\n")
+    
+    # Get all internal researchers
+    internal_researchers = Researcher.query.filter_by(researcher_type='internal').all()
+    print(f"Computing matches for {len(internal_researchers)} internal researchers...\n")
+    
+    matches_stored = 0
+    
+    for idx, internal in enumerate(internal_researchers, 1):
+        print(f"  [{idx}/{len(internal_researchers)}] Processing {internal.name}...")
+        
+        try:
+            # Find top 1 match for this researcher
+            matches = find_matches(internal, top_n=1)
+            
+            for rank, match_data in enumerate(matches, 1):
+                # Get external researcher by email
+                external = Researcher.query.filter_by(email=match_data['email']).first()
+                
+                if external:
+                    # Store match in database
+                    match = Match(
+                        internal_researcher_id=internal.id,
+                        external_researcher_id=external.id,
+                        similarity_percentage=match_data['similarity_percentage'],
+                        match_rank=rank
+                    )
+                    db.session.add(match)
+                    matches_stored += 1
+            
+            # Commit every 10 researchers to avoid memory buildup
+            if idx % 10 == 0:
+                db.session.commit()
+                print(f"    ✓ Committed {matches_stored} matches so far...")
+        
+        except Exception as e:
+            print(f"    ✗ Error: {str(e)}")
+            continue
+    
+    # Final commit
+    db.session.commit()
+    print(f"\n✓ Stored {matches_stored} pre-computed matches in database\n")
 
 def load_all_data():
     """Load all Excel files into the database"""
@@ -170,12 +220,24 @@ def load_all_data():
             print(f"✗ Error loading external researchers: {str(e)}\n")
             db.session.rollback()
         
+        # Pre-compute matches
+        print("="*60)
+        print("Pre-computing matches...")
+        print("="*60 + "\n")
+        
+        try:
+            compute_and_store_matches()
+        except Exception as e:
+            print(f"✗ Error computing matches: {str(e)}")
+            print("Matches will be computed on-demand instead.\n")
+        
         # Summary
         print("="*60)
         print(f"Data Loading Complete!")
         print(f"Total researchers loaded: {total_loaded}")
         print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
         print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
+        print(f"Pre-computed matches: {Match.query.count()}")
         print("="*60 + "\n")
         
         return total_loaded
