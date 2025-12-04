@@ -134,6 +134,113 @@ def api_counts():
         'total': internal_count + external_count
     })
 
+@app.route('/register/internal', methods=['GET', 'POST'])
+def register_internal():
+    """
+    Internal researcher registration form.
+    GET: Show form
+    POST: Save to database
+    """
+    ensure_tables()
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip().lower()
+            faculty_department = request.form.get('faculty_department', '').strip()
+            primary_areas = request.form.get('primary_areas', '').strip()
+            experience_summary = request.form.get('experience_summary', '').strip()
+            sectors_interested = request.form.get('sectors_interested', '').strip()
+            
+            # Validate required fields
+            if not all([name, email, faculty_department, primary_areas, sectors_interested]):
+                return render_template('register_internal.html', error='Please fill in all required fields')
+            
+            # Check if email already exists
+            existing = Researcher.query.filter_by(email=email).first()
+            if existing:
+                return render_template('register_internal.html', error='This email is already registered')
+            
+            # Create new researcher
+            researcher = Researcher(
+                name=name,
+                email=email,
+                researcher_type='internal',
+                organization='Humber Polytechnic',
+                faculty_department=faculty_department,
+                primary_areas=primary_areas,
+                experience_summary=experience_summary,
+                sectors_interested=sectors_interested
+            )
+            
+            db.session.add(researcher)
+            db.session.commit()
+            
+            # Redirect to success page (matches page)
+            return redirect(url_for('matches', email=email))
+            
+        except Exception as e:
+            db.session.rollback()
+            return render_template('register_internal.html', error=f'Registration failed: {str(e)}')
+    
+    # GET request - show form
+    return render_template('register_internal.html')
+
+@app.route('/register/external', methods=['GET', 'POST'])
+def register_external():
+    """
+    External researcher registration form.
+    GET: Show form
+    POST: Save to database
+    """
+    ensure_tables()
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip().lower()
+            organization = request.form.get('organization', '').strip()
+            organization_focus = request.form.get('organization_focus', '').strip()
+            challenge_description = request.form.get('challenge_description', '').strip()
+            expertise_sought = request.form.get('expertise_sought', '').strip()
+            lab_tours_interested = request.form.get('lab_tours_interested', '').strip()
+            
+            # Validate required fields
+            if not all([name, email, organization, organization_focus, expertise_sought]):
+                return render_template('register_external.html', error='Please fill in all required fields')
+            
+            # Check if email already exists
+            existing = Researcher.query.filter_by(email=email).first()
+            if existing:
+                return render_template('register_external.html', error='This email is already registered')
+            
+            # Create new researcher
+            researcher = Researcher(
+                name=name,
+                email=email,
+                researcher_type='external',
+                organization=organization,
+                organization_focus=organization_focus,
+                challenge_description=challenge_description,
+                expertise_sought=expertise_sought,
+                lab_tours_interested=lab_tours_interested
+            )
+            
+            db.session.add(researcher)
+            db.session.commit()
+            
+            # Redirect to success page (matches page)
+            return redirect(url_for('matches', email=email))
+            
+        except Exception as e:
+            db.session.rollback()
+            return render_template('register_external.html', error=f'Registration failed: {str(e)}')
+    
+    # GET request - show form
+    return render_template('register_external.html')
+
 # Admin route to load initial data from Excel files
 @app.route('/admin/load-data')
 def admin_load_data():
