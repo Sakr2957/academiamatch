@@ -22,12 +22,13 @@
     
     .badge {
         display: inline-block;
-        background: #003C71;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
+        background: transparent;
+        color: #003C71;
+        padding: 0.5rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
         margin-bottom: 1.5rem;
+        letter-spacing: 0.5px;
     }
     
     .stats {
@@ -233,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% block content %}
 <div class="hero">
-    <div class="badge">AI-Powered Research Collaboration</div>
+    <div class="badge">AcademiaMatch</div>
     <h1>Connect Researchers.<br>Build Partnerships.</h1>
     <p>Match external researchers with Humber Polytechnic faculty based on research interests using advanced semantic analysis powered by Sentence Transformers.</p>
 </div>

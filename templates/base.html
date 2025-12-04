@@ -39,10 +39,14 @@
         }
         
         .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: white;
+            display: flex;
+            align-items: center;
             text-decoration: none;
+        }
+        
+        .logo img {
+            height: 50px;
+            width: auto;
         }
         
         .subtitle {
@@ -185,8 +189,10 @@
         <div class="container">
             <div class="header-content">
                 <div>
-                    <a href="/" class="logo">AcademiaMatch</a>
-                    <div class="subtitle">Humber Polytechnic Research Matching</div>
+                    <a href="/" class="logo">
+                        <img src="{{ url_for('static', filename='images/humber_logo.png') }}" alt="Humber Polytechnic">
+                    </a>
+                    <div class="subtitle">The Office of Research and Innovation</div>
                 </div>
                 <div class="nav-links">
                     {% if request.path == '/' %}
