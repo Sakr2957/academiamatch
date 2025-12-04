@@ -222,14 +222,28 @@ def load_all_data():
             print(f"✗ Error loading external researchers: {str(e)}\n")
             db.session.rollback()
         
+        # Pre-compute matches automatically
+        print("="*60)
+        print("Pre-computing matches...")
+        print("="*60 + "\n")
+        
+        try:
+            compute_and_store_matches()
+            print("\n" + "="*60)
+            print("✅ Matches computed and stored successfully!")
+            print("="*60 + "\n")
+        except Exception as e:
+            print(f"\n⚠️ Warning: Could not compute matches: {str(e)}")
+            print("Matches can be computed later via /admin/compute-matches\n")
+        
         # Summary
         print("="*60)
         print(f"Data Loading Complete!")
         print(f"Total researchers loaded: {total_loaded}")
         print(f"Internal: {Researcher.query.filter_by(researcher_type='internal').count()}")
         print(f"External: {Researcher.query.filter_by(researcher_type='external').count()}")
-        print(f"Pre-computed matches: {Match.query.count()}")
-        print("="*60 + "\n")
+        print(f"Matches: {Match.query.count()}")
+        print("="*60)
         
         return total_loaded
 
