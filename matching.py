@@ -63,6 +63,48 @@ def build_text_for_matching(researcher):
     combined = ". ".join(parts)
     return preprocess_text(combined)
 
+def extract_keywords(text):
+    """
+    Extract keywords from text by splitting on commas and cleaning.
+    Returns a set of lowercase keywords.
+    """
+    if not text:
+        return set()
+    
+    keywords = set()
+    # Split by comma and clean each keyword
+    for keyword in text.split(','):
+        cleaned = keyword.strip().lower()
+        if cleaned and len(cleaned) > 2:  # Ignore very short keywords
+            keywords.add(cleaned)
+    
+    return keywords
+
+def find_matching_keywords(internal_researcher, external_researcher):
+    """
+    Find overlapping keywords between internal and external researchers.
+    
+    Args:
+        internal_researcher: Internal Researcher object
+        external_researcher: External Researcher object
+    
+    Returns:
+        List of matching keywords (strings)
+    """
+    # Extract keywords from internal researcher
+    internal_keywords = extract_keywords(internal_researcher.primary_areas or '')
+    
+    # Extract keywords from external researcher
+    external_keywords = set()
+    external_keywords.update(extract_keywords(external_researcher.expertise_sought or ''))
+    external_keywords.update(extract_keywords(external_researcher.organization_focus or ''))
+    
+    # Find intersection
+    matching = internal_keywords.intersection(external_keywords)
+    
+    # Return as sorted list
+    return sorted(list(matching))
+
 def find_matches(researcher, top_n=5):
     """
     Find top N matches for a researcher object.
@@ -127,6 +169,14 @@ def find_matches(researcher, top_n=5):
                 'similarity_score': round(similarity_score, 4),
                 'similarity_percentage': round(similarity_score * 100, 2)
             }
+            
+            # Add matching keywords
+            if researcher.researcher_type == 'internal':
+                # Internal searching for external
+                match_info['matching_keywords'] = find_matching_keywords(researcher, candidate)
+            else:
+                # External searching for internal
+                match_info['matching_keywords'] = find_matching_keywords(candidate, researcher)
             
             # Add type-specific information
             if candidate.researcher_type == 'internal':
@@ -208,6 +258,14 @@ def find_matches_for_researcher(email, top_n=5):
                 'similarity_score': round(similarity_score, 4),
                 'similarity_percentage': round(similarity_score * 100, 2)
             }
+            
+            # Add matching keywords
+            if researcher.researcher_type == 'internal':
+                # Internal searching for external
+                match_info['matching_keywords'] = find_matching_keywords(researcher, candidate)
+            else:
+                # External searching for internal
+                match_info['matching_keywords'] = find_matching_keywords(candidate, researcher)
             
             # Add type-specific information
             if candidate.researcher_type == 'internal':

@@ -101,6 +101,30 @@
         font-size: 0.85rem;
     }
     
+    .keyword-badge {
+        background: #28a745;
+        color: white;
+        padding: 0.4rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    
+    .keywords-section {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .keywords-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+    
     .email-btn {
         display: inline-flex;
         align-items: center;
@@ -156,12 +180,12 @@
             </div>
         </div>
         
-        {% if match.interests %}
-        <div class="match-interests">
-            <div class="interests-label">Research Interests:</div>
+        {% if match.matching_keywords %}
+        <div class="keywords-section">
+            <div class="keywords-label">🔗 Matching Keywords:</div>
             <div class="interests-tags">
-                {% for interest in match.interests.split(',')[:5] %}
-                <span class="tag">{{ interest.strip() }}</span>
+                {% for keyword in match.matching_keywords %}
+                <span class="keyword-badge">{{ keyword }}</span>
                 {% endfor %}
             </div>
         </div>
