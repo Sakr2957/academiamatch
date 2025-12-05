@@ -764,10 +764,15 @@ def admin_load_top20():
         
         # Load new matches
         loaded_count = 0
+        skipped = []
         for idx, row in df.iterrows():
-            # Get or create researchers
-            internal = Researcher.query.filter_by(email=row['internal_email']).first()
-            external = Researcher.query.filter_by(email=row['external_email']).first()
+            # Normalize emails (lowercase, strip whitespace)
+            internal_email = str(row['internal_email']).lower().strip()
+            external_email = str(row['external_email']).lower().strip()
+            
+            # Get researchers
+            internal = Researcher.query.filter_by(email=internal_email).first()
+            external = Researcher.query.filter_by(email=external_email).first()
             
             if internal and external:
                 match = Match(
@@ -778,23 +783,46 @@ def admin_load_top20():
                 )
                 db.session.add(match)
                 loaded_count += 1
+            else:
+                skipped.append({
+                    'rank': idx + 1,
+                    'internal': row['internal_name'],
+                    'internal_email': internal_email,
+                    'internal_found': internal is not None,
+                    'external': row['external_name'],
+                    'external_email': external_email,
+                    'external_found': external is not None
+                })
         
         db.session.commit()
+        
+        # Build skipped details
+        skipped_html = ""
+        if skipped:
+            skipped_html = "<h3 style='color: #e74c3c;'>⚠️ Skipped Matches:</h3><ul>"
+            for s in skipped:
+                skipped_html += f"<li>#{s['rank']}: {s['internal']} + {s['external']}<br>"
+                skipped_html += f"<small>Internal ({s['internal_email']}): {'✅ Found' if s['internal_found'] else '❌ Not Found'}</small><br>"
+                skipped_html += f"<small>External ({s['external_email']}): {'✅ Found' if s['external_found'] else '❌ Not Found'}</small></li>"
+            skipped_html += "</ul>"
         
         return f"""
         <html>
         <head><title>Top 20 Loaded</title></head>
         <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
-            <h1 style="color: #27ae60;">✅ Top 20 Matches Loaded!</h1>
+            <h1 style="color: {'#27ae60' if loaded_count == 20 else '#f39c12'};">✅ Top 20 Load Complete!</h1>
             <p>Deleted <strong>{deleted_count}</strong> old matches.</p>
-            <p>Loaded <strong>{loaded_count}</strong> new Top 20 matches.</p>
+            <p>Loaded <strong>{loaded_count}</strong> new matches.</p>
+            {skipped_html}
             <h3>Summary:</h3>
             <ul>
                 <li>Match table cleared</li>
-                <li>Top 20 highest-scoring matches loaded</li>
+                <li>{loaded_count} matches loaded successfully</li>
+                <li>{len(skipped)} matches skipped (researchers not found)</li>
                 <li>Email logs preserved (not affected)</li>
             </ul>
-            <p><a href="/match-list" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Top 20 List</a></p>
+            <p><a href="/match-list" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Match List</a></p>
+            <p><a href="/admin/safe-check-researchers" style="background: #f39c12; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">Check Missing Researchers</a></p>
             <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
         </body>
         </html>
