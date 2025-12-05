@@ -726,5 +726,100 @@ def admin_reset_email_logs():
         </html>
         """, 500
 
+@app.route('/admin/load-top20')
+def admin_load_top20():
+    """
+    Load Top 20 matches from Excel file into database.
+    This replaces all matches in the Match table with the curated Top 20.
+    URL: https://academiamatch.onrender.com/admin/load-top20
+    """
+    ensure_tables()
+    
+    try:
+        import pandas as pd
+        import os
+        
+        # Path to the top20 Excel file
+        excel_file = 'top20_matches.xlsx'
+        
+        if not os.path.exists(excel_file):
+            return f"""
+            <html>
+            <head><title>File Not Found</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+                <h1 style="color: #e74c3c;">❌ Error</h1>
+                <p>Top 20 matches file not found: <code>{excel_file}</code></p>
+                <p>Please ensure the file exists in the application directory.</p>
+                <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+            </body>
+            </html>
+            """, 404
+        
+        # Read Excel file
+        df = pd.read_excel(excel_file)
+        
+        # Clear existing matches
+        deleted_count = Match.query.delete()
+        db.session.commit()
+        
+        # Load new matches
+        loaded_count = 0
+        for idx, row in df.iterrows():
+            # Get or create researchers
+            internal = Researcher.query.filter_by(email=row['internal_email']).first()
+            external = Researcher.query.filter_by(email=row['external_email']).first()
+            
+            if internal and external:
+                match = Match(
+                    internal_researcher_id=internal.id,
+                    external_researcher_id=external.id,
+                    similarity_percentage=float(row['similarity_percentage']),
+                    match_rank=idx + 1
+                )
+                db.session.add(match)
+                loaded_count += 1
+        
+        db.session.commit()
+        
+        return f"""
+        <html>
+        <head><title>Top 20 Loaded</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Top 20 Matches Loaded!</h1>
+            <p>Deleted <strong>{deleted_count}</strong> old matches.</p>
+            <p>Loaded <strong>{loaded_count}</strong> new Top 20 matches.</p>
+            <h3>Summary:</h3>
+            <ul>
+                <li>Match table cleared</li>
+                <li>Top 20 highest-scoring matches loaded</li>
+                <li>Email logs preserved (not affected)</li>
+            </ul>
+            <p><a href="/match-list" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Top 20 List</a></p>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        db.session.rollback()
+        return f"""
+        <html>
+        <head><title>Load Error</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to load Top 20 matches.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <details>
+                <summary>Full Traceback</summary>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{error_details}</pre>
+            </details>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
