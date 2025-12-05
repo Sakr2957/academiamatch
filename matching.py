@@ -357,8 +357,8 @@ def compute_all_matches_batch(batch_size=19):
         for i, external in enumerate(batch):
             sims = similarities[i]
             
-            # Get top 5 matches
-            top_indices = np.argsort(-sims)[:5]
+            # Get top 20 matches per external researcher
+            top_indices = np.argsort(-sims)[:20]
             
             for rank, idx in enumerate(top_indices, start=1):
                 internal = internal_researchers[idx]

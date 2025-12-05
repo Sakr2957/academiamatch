@@ -680,5 +680,51 @@ def match_list():
         error_details = traceback.format_exc()
         return f"Error loading matches: {str(e)}<br><br><pre>{error_details}</pre>", 500
 
+@app.route('/admin/reset-email-logs')
+def admin_reset_email_logs():
+    """
+    Reset all email logs (clear 'Sent' status for all matches).
+    URL: https://academiamatch.onrender.com/admin/reset-email-logs
+    """
+    ensure_tables()
+    
+    try:
+        # Delete all email logs
+        deleted_count = EmailLog.query.delete()
+        db.session.commit()
+        
+        return f"""
+        <html>
+        <head><title>Email Logs Reset</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Email Logs Reset Complete!</h1>
+            <p>Deleted <strong>{deleted_count}</strong> email log entries.</p>
+            <p>All match statuses are now "Not Sent".</p>
+            <p><a href="/match-list" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Match List</a></p>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        <html>
+        <head><title>Reset Error</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to reset email logs.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <details>
+                <summary>Full Traceback</summary>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{error_details}</pre>
+            </details>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
