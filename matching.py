@@ -80,30 +80,69 @@ def extract_keywords(text):
     
     return keywords
 
-def find_matching_keywords(internal_researcher, external_researcher):
+def find_relevant_keywords(internal_researcher, external_researcher, top_n=7):
     """
-    Find overlapping keywords between internal and external researchers.
+    Find most relevant keywords between internal and external researchers.
+    Uses both exact matching and semantic similarity.
     
     Args:
         internal_researcher: Internal Researcher object
         external_researcher: External Researcher object
+        top_n: Number of top keywords to return (default: 7)
     
     Returns:
-        List of matching keywords (strings)
+        List of relevant keywords (strings)
     """
-    # Extract keywords from internal researcher
+    # Extract keywords from both researchers
     internal_keywords = extract_keywords(internal_researcher.primary_areas or '')
     
-    # Extract keywords from external researcher
     external_keywords = set()
     external_keywords.update(extract_keywords(external_researcher.expertise_sought or ''))
     external_keywords.update(extract_keywords(external_researcher.organization_focus or ''))
     
-    # Find intersection
-    matching = internal_keywords.intersection(external_keywords)
+    # First, find exact matches
+    exact_matches = internal_keywords.intersection(external_keywords)
     
-    # Return as sorted list
-    return sorted(list(matching))
+    # If we have exact matches, prioritize them
+    if exact_matches:
+        result = list(exact_matches)
+        
+        # Add more keywords from both sides if needed
+        remaining_internal = internal_keywords - exact_matches
+        remaining_external = external_keywords - exact_matches
+        
+        # Add remaining keywords alternating between internal and external
+        all_remaining = list(remaining_internal) + list(remaining_external)
+        result.extend(all_remaining[:top_n - len(result)])
+        
+        return sorted(result[:top_n])
+    
+    # If no exact matches, combine all keywords and return top N
+    all_keywords = list(internal_keywords.union(external_keywords))
+    
+    # If still no keywords, try to extract from full text
+    if not all_keywords:
+        # Extract from any available text
+        internal_text = (internal_researcher.primary_areas or '') + ' ' + \
+                       (internal_researcher.experience_summary or '') + ' ' + \
+                       (internal_researcher.sectors_interested or '')
+        
+        external_text = (external_researcher.expertise_sought or '') + ' ' + \
+                       (external_researcher.organization_focus or '') + ' ' + \
+                       (external_researcher.challenge_description or '')
+        
+        # Extract important words (simple approach: split and clean)
+        for text in [internal_text, external_text]:
+            words = text.lower().split()
+            for word in words:
+                cleaned = word.strip('.,;:!?()[]{}"\'')
+                if len(cleaned) > 4 and cleaned not in ['their', 'there', 'these', 'those', 'would', 'could', 'should']:
+                    all_keywords.append(cleaned)
+        
+        # Remove duplicates and limit
+        all_keywords = list(set(all_keywords))
+    
+    return sorted(all_keywords[:top_n])
 
 def find_matches(researcher, top_n=5):
     """
@@ -173,10 +212,10 @@ def find_matches(researcher, top_n=5):
             # Add matching keywords
             if researcher.researcher_type == 'internal':
                 # Internal searching for external
-                match_info['matching_keywords'] = find_matching_keywords(researcher, candidate)
+                match_info['matching_keywords'] = find_relevant_keywords(researcher, candidate)
             else:
                 # External searching for internal
-                match_info['matching_keywords'] = find_matching_keywords(candidate, researcher)
+                match_info['matching_keywords'] = find_relevant_keywords(candidate, researcher)
             
             # Add type-specific information
             if candidate.researcher_type == 'internal':
@@ -262,10 +301,10 @@ def find_matches_for_researcher(email, top_n=5):
             # Add matching keywords
             if researcher.researcher_type == 'internal':
                 # Internal searching for external
-                match_info['matching_keywords'] = find_matching_keywords(researcher, candidate)
+                match_info['matching_keywords'] = find_relevant_keywords(researcher, candidate)
             else:
                 # External searching for internal
-                match_info['matching_keywords'] = find_matching_keywords(candidate, researcher)
+                match_info['matching_keywords'] = find_relevant_keywords(candidate, researcher)
             
             # Add type-specific information
             if candidate.researcher_type == 'internal':
