@@ -821,5 +821,136 @@ def admin_load_top20():
         </html>
         """, 500
 
+@app.route('/admin/safe-check-researchers')
+def admin_safe_check_researchers():
+    """
+    Safely check for missing researchers and add them if needed.
+    Does NOT delete anything - only adds missing researchers.
+    URL: https://academiamatch.onrender.com/admin/safe-check-researchers
+    """
+    ensure_tables()
+    
+    try:
+        import pandas as pd
+        
+        # Read Excel files
+        internal_df = pd.read_excel('HumberInternalResearch.xlsx')
+        external_df = pd.read_excel('ExternalResearch.xlsx')
+        
+        # Rename columns
+        internal_df = internal_df.rename(columns={
+            "Your Name": "name",
+            "Email Address": "email",
+            "Your Faculty/Department": "faculty_department",
+            internal_df.columns[4]: "primary_areas",
+            internal_df.columns[5]: "experience_summary",
+            internal_df.columns[6]: "sectors_interested"
+        })
+        
+        external_df = external_df.rename(columns={
+            "Your Name": "name",
+            "Email Address": "email",
+            "Your Orgnization": "organization",
+            external_df.columns[4]: "organization_focus",
+            external_df.columns[5]: "challenge_description",
+            external_df.columns[6]: "expertise_sought",
+            external_df.columns[7]: "lab_tours_interested"
+        })
+        
+        added_internal = 0
+        added_external = 0
+        
+        # Check and add internal researchers
+        for _, row in internal_df.iterrows():
+            email = str(row['email']).strip().lower()
+            existing = Researcher.query.filter_by(email=email).first()
+            
+            if not existing:
+                researcher = Researcher(
+                    name=row['name'],
+                    email=email,
+                    researcher_type='internal',
+                    organization='Humber Polytechnic',
+                    faculty_department=row.get('faculty_department'),
+                    primary_areas=row.get('primary_areas'),
+                    experience_summary=row.get('experience_summary'),
+                    sectors_interested=row.get('sectors_interested')
+                )
+                db.session.add(researcher)
+                added_internal += 1
+        
+        # Check and add external researchers
+        for _, row in external_df.iterrows():
+            email = str(row['email']).strip().lower()
+            existing = Researcher.query.filter_by(email=email).first()
+            
+            if not existing:
+                researcher = Researcher(
+                    name=row['name'],
+                    email=email,
+                    researcher_type='external',
+                    organization=row.get('organization'),
+                    organization_focus=row.get('organization_focus'),
+                    challenge_description=row.get('challenge_description'),
+                    expertise_sought=row.get('expertise_sought'),
+                    lab_tours_interested=row.get('lab_tours_interested')
+                )
+                db.session.add(researcher)
+                added_external += 1
+        
+        db.session.commit()
+        
+        # Get current counts
+        total_internal = Researcher.query.filter_by(researcher_type='internal').count()
+        total_external = Researcher.query.filter_by(researcher_type='external').count()
+        
+        return f"""
+        <html>
+        <head><title>Safe Check Complete</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #27ae60;">✅ Safe Check Complete!</h1>
+            <h3>Added Missing Researchers:</h3>
+            <ul>
+                <li>Internal: <strong>{added_internal}</strong> added</li>
+                <li>External: <strong>{added_external}</strong> added</li>
+            </ul>
+            <h3>Current Database Status:</h3>
+            <ul>
+                <li>Total Internal: <strong>{total_internal}</strong></li>
+                <li>Total External: <strong>{total_external}</strong></li>
+            </ul>
+            <h3>What Was NOT Touched:</h3>
+            <ul>
+                <li>✅ Existing researchers - preserved</li>
+                <li>✅ Match table - preserved</li>
+                <li>✅ Email logs - preserved</li>
+            </ul>
+            <p><a href="/admin/load-top20" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Now Load Top 20</a></p>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        db.session.rollback()
+        return f"""
+        <html>
+        <head><title>Check Error</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">❌ Error</h1>
+            <p>Failed to check researchers.</p>
+            <h3>Error Details:</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{str(e)}</pre>
+            <details>
+                <summary>Full Traceback</summary>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{error_details}</pre>
+            </details>
+            <p><a href="/" style="color: #3498db;">← Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
