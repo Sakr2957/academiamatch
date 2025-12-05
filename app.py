@@ -642,8 +642,8 @@ def match_list():
     ensure_tables()
     
     try:
-        # Get top 10 highest-scoring matches from database
-        matches = Match.query.order_by(Match.similarity_percentage.desc()).limit(10).all()
+        # Get top 20 highest-scoring matches from database
+        matches = Match.query.order_by(Match.similarity_percentage.desc()).limit(20).all()
         
         # Get email logs for status
         email_logs = EmailLog.query.all()

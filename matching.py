@@ -291,7 +291,7 @@ def find_matches_for_researcher(email, top_n=5):
     
     return find_matches(target, top_n)
 
-def compute_all_matches_batch(batch_size=10):
+def compute_all_matches_batch(batch_size=19):
     """
     Compute matches for all external researchers in batches.
     Stores results in the Match table.
