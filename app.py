@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, make_response
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -670,7 +670,10 @@ def match_list():
                 'email_sent_at': email_status.get(key)
             })
         
-        return render_template('match_list.html', matches=all_matches)
+        # Clear session after viewing to force login next time
+        response = make_response(render_template('match_list.html', matches=all_matches))
+        session.pop('admin_logged_in', None)
+        return response
     
     except Exception as e:
         import traceback
